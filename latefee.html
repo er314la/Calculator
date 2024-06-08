@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Late Fee Calculator</title>
+    <script>
+        function calculateLateFee() {
+            const balanceDue = parseFloat(document.getElementById('balanceDue').value);
+            const paymentDate = new Date(document.getElementById('paymentDate').value);
+            const thirdOfMonth = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), 3);
+
+            // Find the first business day after the 3rd
+            let dueDate = thirdOfMonth;
+            if (thirdOfMonth.getDay() === 6) { // If 3rd is Saturday
+                dueDate.setDate(thirdOfMonth.getDate() + 2);
+            } else if (thirdOfMonth.getDay() === 0) { // If 3rd is Sunday
+                dueDate.setDate(thirdOfMonth.getDate() + 1);
+            }
+
+            const msInDay = 24 * 60 * 60 * 1000;
+            const daysLate = Math.floor((paymentDate - dueDate) / msInDay);
+
+            let lateFee = 0;
+            if (daysLate > 0) {
+                if (balanceDue < 500) {
+                    lateFee = Math.min(balanceDue * 0.01, 2) * daysLate;
+                } else {
+                    lateFee = 5 * daysLate;
+                }
+            }
+
+if (lateFee <50) {
+document.getElementById('lateFee').innerText = `Late Fee: $${lateFee.toFixed(2)}`;
+        }
+else 
+{document.getElementById('lateFee').innerText = `Late Fee: $50 please pay immediately! you may be subject to eviction `;}}
+    </script>
+</head>
+<body>
+    <form>
+        <label for="balanceDue">Balance Due:</label>
+        <input type="number" id="balanceDue" name="balanceDue" required><br><br>
+
+        <label for="paymentDate">Payment Date:</label>
+        <input type="date" id="paymentDate" name="paymentDate" required><br><br>
+
+        <button type="button" onclick="calculateLateFee()">Calculate Late Fee</button>
+    </form>
+
+    <p id="lateFee">Late Fee: $0.00</p>
+</body>
+</html>
