@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phonetic Alphabet Dropdown</title>
+</head>
+<body>
+    <h1>Phonetic Alphabet Dropdown Generator</h1>
+    <label for="sentenceInput">Enter a sentence:</label>
+    <input type="text" id="sentenceInput" oninput="generateDropdowns()">
+    <div id="dropdownContainer"></div>
+
+    <script>
+        const phoneticAlphabet = {
+            'A': 'Adam', 'B': 'Boy', 'C': 'Charles', 'D': 'David', 'E': 'Eddie', 'F': 'Frank', 'G': 'George', 'H': 'Henry',
+            'I': 'Ida', 'J': 'John', 'K': 'King', 'L': 'Larry', 'M': 'Mike', 'N': 'Nora', 'O': 'Oscar', 'P': 'Peter',
+            'Q': 'Queen', 'R': 'Robert', 'S': 'Sam', 'T': 'Thomas', 'U': 'Union', 'V': 'Victor', 'W': 'William',
+            'X': 'X-Ray', 'Y': 'Yellow', 'Z': 'Zebra'
+        };
+
+        const natoAlphabet = {
+            'A': 'Alpha', 'B': 'Bravo', 'C': 'Charlie', 'D': 'Delta', 'E': 'Echo', 'F': 'Foxtrot', 'G': 'Golf', 'H': 'Hotel',
+            'I': 'India', 'J': 'Juliett', 'K': 'Kilo', 'L': 'Lima', 'M': 'Mike', 'N': 'November', 'O': 'Oscar', 'P': 'Papa',
+            'Q': 'Quebec', 'R': 'Romeo', 'S': 'Sierra', 'T': 'Tango', 'U': 'Uniform', 'V': 'Victor', 'W': 'Whiskey',
+            'X': 'X-ray', 'Y': 'Yankee', 'Z': 'Zulu'
+        };
+
+        const westernUnionAlphabet = {
+            'A': 'Adams', 'B': 'Boston', 'C': 'Chicago', 'D': 'Denver', 'E': 'Easy', 'F': 'Frank', 'G': 'George', 'H': 'Henry',
+            'I': 'Ida', 'J': 'John', 'K': 'King', 'L': 'Lincoln', 'M': 'Mary', 'N': 'New York', 'O': 'Ocean', 'P': 'Peter',
+            'Q': 'Queen', 'R': 'Roger', 'S': 'Sugar', 'T': 'Thomas', 'U': 'Union', 'V': 'Victor', 'W': 'William',
+            'X': 'X-ray', 'Y': 'Young', 'Z': 'Zero'
+        };
+
+        function generateDropdowns() {
+            const sentence = document.getElementById('sentenceInput').value;
+            const container = document.getElementById('dropdownContainer');
+            container.innerHTML = '';
+
+            sentence.toUpperCase().split('').forEach(letter => {
+                if (phoneticAlphabet[letter] || letter === ' ') {
+                    if (letter === ' ') {
+                        container.appendChild(document.createElement('br'));
+                    } else {
+                        const dropdown = document.createElement('select');
+                        const uniqueOptions = new Set([phoneticAlphabet[letter], natoAlphabet[letter], westernUnionAlphabet[letter]]);
+                        uniqueOptions.forEach(optionText => {
+                            const option = document.createElement('option');
+                            option.value = optionText;
+                            option.text = optionText;
+                            dropdown.appendChild(option);
+                        });
+                        container.appendChild(dropdown);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
