@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solar Neighborhood 3D Map</title>
+    <style>
+        body { 
+            margin: 0; 
+            touch-action: none; /* Prevents default touch behaviors */
+            -webkit-touch-callout: none; /* Prevents callout */
+            -webkit-user-select: none; /* Prevents selection */
+        }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+        }
+        #tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            display: none;
+        }
+        .star-label {
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            padding: 2px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 3px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Solar Neighborhood - 25 Light Years<br>Drag to rotate, pinch to zoom</div>
+    <div id="tooltip"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+    <script>
+       const stars = [
+            {
+                commonName: "Sun",
+                ra: "00 00 00",
+                dec: "+00 00 00",
+                parallax: 1000000,
+                spectralType: "G2.0 V",
+                vMag: -26.72,
+                color: 0xffff00
+            },
+            {
+                commonName: "Proxima Centauri",
+                ra: "14 29 43.0",
+                dec: "-62 40 46",
+                parallax: 0.76885,
+                spectralType: "M5.0 V",
+                vMag: 11.05,
+                color: 0xff6666
+            },
+            {
+                commonName: "Alpha Centauri A",
+                ra: "14 39 36.5",
+                dec: "-60 50 02",
+                parallax: 0.74723,
+                spectralType: "G2.0 V",
+                vMag: 0.01,
+                color: 0xffff00
+            },
+            {
+                commonName: "Barnard's Star",
+                ra: "17 57 48.5",
+                dec: "+04 41 36",
+                parallax: 0.54551,
+                spectralType: "M3.5 V",
+                vMag: 9.57,
+                color: 0xff4444
+            },
+            {
+                commonName: "Wolf 359",
+                ra: "10 56 29.2",
+                dec: "+07 00 53",
+                parallax: 0.41910,
+                spectralType: "M5.5 V",
+                vMag: 13.53,
+                color: 0xff4444
+            },
+            {
+                commonName: "Sirius A",
+                ra: "06 45 08.9",
+                dec: "-16 42 58",
+                parallax: 0.38002,
+                spectralType: "A1.0 V",
+                vMag: -1.43,
+                color: 0xffffff
+            },
+{
+    commonName: "Sirius B",
+    ra: "06 45 08.9",
+    dec: "-16 42 58",
+    parallax: 0.38002,
+    spectralType: "DA2",
+    vMag: 8.44
+},
+{
+    commonName: "BL Ceti",
+    ra: "01 39 01.3",
+    dec: "-17 57 01",
+    parallax: 0.37370,
+    spectralType: "M5.5 V",
+    vMag: 12.61
+},
+{
+    commonName: "UV Ceti",
+    ra: "01 39 01.3",
+    dec: "-17 57 01",
+    parallax: 0.37370,
+    spectralType: "M6.0 V",
+    vMag: 13.06
+},
+{
+    commonName: "Ross 154",
+    ra: "18 49 49.4",
+    dec: "-23 50 10",
+    parallax: 0.33722,
+    spectralType: "M3.5 V",
+    vMag: 10.44
+},
+{
+    commonName: "Ross 248",
+    ra: "23 41 54.7",
+    dec: "+44 10 30",
+    parallax: 0.31637,
+    spectralType: "M5.5 V",
+    vMag: 12.29
+},
+{
+    commonName: "Epsilon Eridani",
+    ra: "03 32 55.8",
+    dec: "-09 27 30",
+    parallax: 0.31122,
+    spectralType: "K2.0 V",
+    vMag: 3.73
+},
+{
+    commonName: "Lacaille 9352",
+    ra: "23 05 52.0",
+    dec: "-35 51 11",
+    parallax: 0.30508,
+    spectralType: "M1.0 V",
+    vMag: 7.34
+},
+{
+    commonName: "Ross 128",
+    ra: "11 47 44.4",
+    dec: "+00 48 16",
+    parallax: 0.29814,
+    spectralType: "M4.0 V",
+    vMag: 11.16
+},
+{
+        commonName: "EZ Aquarii A",
+        ra: "22 38 33.4",
+        dec: "-15 18 07",
+        parallax: 0.28950,
+        spectralType: "M5.0 VJ",
+        vMag: 13.03
+    },
+    {
+        commonName: "EZ Aquarii B",
+        ra: "22 38 33.4",
+        dec: "-15 18 07",
+        parallax: 0.28950,
+        spectralType: "M V",
+        vMag: 13.27
+    },
+    {
+        commonName: "EZ Aquarii C",
+        ra: "22 38 33.4",
+        dec: "-15 18 07",
+        parallax: 0.28950,
+        spectralType: "M V",
+        vMag: 15.07
+    },
+    {
+        commonName: "61 Cygni A",
+        ra: "21 06 53.9",
+        dec: "+38 44 58",
+        parallax: 0.28608,
+        spectralType: "K5.0 V",
+        vMag: 5.20
+    },
+    {
+        commonName: "61 Cygni B",
+        ra: "21 06 55.3",
+        dec: "+38 44 31",
+        parallax: 0.28608,
+        spectralType: "K7.0 V",
+        vMag: 6.03
+    },
+    {
+        commonName: "Procyon",
+        ra: "07 39 18.1",
+        dec: "+05 13 30",
+        parallax: 0.28517,
+        spectralType: "F5 IV-V",
+        vMag: 0.37
+    },
+    {
+        commonName: "Procyon B",
+        ra: "07 39 18.1",
+        dec: "+05 13 30",
+        parallax: 0.28517,
+        spectralType: "DQZ",
+        vMag: 10.70
+    },
+    {
+        commonName: "GX Andromedae",
+        ra: "00 18 22.9",
+        dec: "+44 01 23",
+        parallax: 0.27987,
+        spectralType: "M1.5 V",
+        vMag: 8.08
+    },
+    {
+        commonName: "GQ Andromedae",
+        ra: "00 18 22.9",
+        dec: "+44 01 23",
+        parallax: 0.27987,
+        spectralType: "M3.5 V",
+        vMag: 11.06
+    },
+    {
+        commonName: "Epsilon Indi A",
+        ra: "22 03 21.7",
+        dec: "-56 47 10",
+        parallax: 0.27607,
+        spectralType: "K4.0 V",
+        vMag: 4.68
+    },
+    {
+        commonName: "Epsilon Indi B",
+        ra: "22 04 10.5",
+        dec: "-56 46 58",
+        parallax: 0.27607,
+        spectralType: "T1.0 V",
+        vMag: null
+    },
+    {
+        commonName: "Epsilon Indi C",
+        ra: "22 04 10.5",
+        dec: "-56 46 58",
+        parallax: 0.27607,
+        spectralType: "T6.0 V",
+        vMag: null
+    },
+    {
+        commonName: "DX Cancri",
+        ra: "08 29 49.5",
+        dec: "+26 46 37",
+        parallax: 0.27580,
+        spectralType: "M6.0 V",
+        vMag: 14.90
+    },
+    {
+        commonName: "Tau Ceti",
+        ra: "01 44 04.1",
+        dec: "-15 56 15",
+        parallax: 0.27397,
+        spectralType: "G8.5 V",
+        vMag: 3.49
+    },
+    {
+        commonName: "YZ Ceti",
+        ra: "01 12 30.6",
+        dec: "-16 59 56",
+        parallax: 0.26908,
+        spectralType: "M4.0 V",
+        vMag: 12.10
+    },
+    {
+        commonName: "Luyten's Star",
+        ra: "07 27 24.5",
+        dec: "+05 13 33",
+        parallax: 0.26623,
+        spectralType: "M3.5 V",
+        vMag: 9.85
+    },
+    {
+        commonName: "Kapteyn's Star",
+        ra: "05 11 40.6",
+        dec: "-45 01 06",
+        parallax: 0.25567,
+        spectralType: "M2.0 VI",
+        vMag: 8.85
+    },
+    {
+        commonName: "AX Microscopii",
+        ra: "21 17 15.3",
+        dec: "-38 52 03",
+        parallax: 0.25344,
+        spectralType: "K9.0 V",
+        vMag: 6.67
+    },
+    {
+        commonName: "Kruger 60 A",
+        ra: "22 27 59.5",
+        dec: "+57 41 45",
+        parallax: 0.24806,
+        spectralType: "M3.0 V",
+        vMag: 9.79
+    },
+    {
+        commonName: "Kruger 60 B",
+        ra: "22 27 59.5",
+        dec: "+57 41 45",
+        parallax: 0.24806,
+        spectralType: "M4.0 V",
+        vMag: 11.41
+    },
+    {
+        commonName: "Ross 614 A",
+        ra: "06 29 23.4",
+        dec: "-02 48 50",
+        parallax: 0.24444,
+        spectralType: "M4.5 VJ",
+        vMag: 11.18
+    },
+    {
+        commonName: "Ross 614 B",
+        ra: "06 29 23.4",
+        dec: "-02 48 50",
+        parallax: 0.24444,
+        spectralType: "M V",
+        vMag: 14.26
+    },
+    {
+        commonName: "Wolf 1061",
+        ra: "16 30 18.1",
+        dec: "-12 39 45",
+        parallax: 0.23438,
+        spectralType: "M3.5 V",
+        vMag: 10.10
+    },
+    {
+        commonName: "Van Maanen's Star",
+        ra: "00 49 09.9",
+        dec: "+05 23 19",
+        parallax: 0.23270,
+        spectralType: "DZ7",
+        vMag: 12.40
+    },
+    {
+        commonName: "Wolf 424 A",
+        ra: "12 33 17.2",
+        dec: "+09 01 15",
+        parallax: 0.22790,
+        spectralType: "M5.0 VJ",
+        vMag: 13.25
+    },
+    {
+        commonName: "Wolf 424 B",
+        ra: "12 33 17.2",
+        dec: "+09 01 15",
+        parallax: 0.22790,
+        spectralType: "M V",
+        vMag: 13.24
+    },
+    {
+        commonName: "TZ Arietis",
+        ra: "02 00 13.2",
+        dec: "+13 03 08",
+        parallax: 0.22480,
+        spectralType: "M4.0 V",
+        vMag: 12.31
+    },
+    {
+        commonName: "EV Lacertae",
+        ra: "22 46 49.7",
+        dec: "+44 20 02",
+        parallax: 0.19821,
+        spectralType: "M3.5 V",
+        vMag: 10.22
+    },
+    {
+        commonName: "70 Ophiuchi A",
+        ra: "18 05 27.3",
+        dec: "+02 30 00",
+        parallax: 0.19596,
+        spectralType: "K0.0 V",
+        vMag: 4.21
+    },
+    {
+        commonName: "70 Ophiuchi B",
+        ra: "18 05 27.3",
+        dec: "+02 30 00",
+        parallax: 0.19596,
+        spectralType: "K5 V",
+        vMag: 6.01
+    },
+    {
+        commonName: "Altair",
+        ra: "19 50 47.0",
+        dec: "+08 52 06",
+        parallax: 0.19540,
+        spectralType: "A7 IV-V",
+        vMag: 0.77
+    },
+    {
+        commonName: "Gliese 581",
+        ra: "15 19 26.8",
+        dec: "-07 43 20",
+        parallax: 0.15780,
+        spectralType: "M3.0 V",
+        vMag: 10.57
+    }
+        ];
+
+        // Initialize Three.js
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Initialize CSS2D renderer for labels
+        const labelRenderer = new THREE.CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+
+        // Helper function to convert RA and Dec to cartesian coordinates
+        function convertToCartesian(ra, dec, parallax) {
+            const distance = 1 / parallax * 10;
+            const [raHours, raMin, raSec] = ra.split(' ').map(Number);
+            const [decDeg, decMin, decSec] = dec.replace('+', '').split(' ').map(Number);
+            
+            const raRadians = ((raHours + raMin/60 + raSec/3600) * 15) * Math.PI / 180;
+            const decRadians = (Math.abs(decDeg) + decMin/60 + decSec/3600) * Math.PI / 180 * (dec.startsWith('-') ? -1 : 1);
+            
+            return {
+                x: distance * Math.cos(decRadians) * Math.cos(raRadians),
+                y: distance * Math.cos(decRadians) * Math.sin(raRadians),
+                z: distance * Math.sin(decRadians)
+            };
+        }
+
+        // Add stars to scene with labels
+        stars.forEach(star => {
+            const pos = convertToCartesian(star.ra, star.dec, star.parallax);
+            const geometry = new THREE.SphereGeometry(Math.max(0.2, (15 - star.vMag) / 20), 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: star.color || 0xff4444 });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(pos.x, pos.y, pos.z);
+            sphere.userData = star;
+            scene.add(sphere);
+
+            // Create label
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'star-label';
+            labelDiv.textContent = star.commonName;
+            const label = new THREE.CSS2DObject(labelDiv);
+            label.position.set(pos.x, pos.y, pos.z);
+            scene.add(label);
+        });
+
+        // Add coordinate grid
+        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        // Position camera
+        camera.position.z = 80;
+
+        // Touch control variables
+        let isDragging = false;
+        let previousTouch = {
+            x: 0,
+            y: 0
+        };
+        let previousPinchDistance = 0;
+
+        // Touch event handlers
+        document.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            if (e.touches.length === 1) {
+                previousTouch = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY
+                };
+            } else if (e.touches.length === 2) {
+                // Store initial pinch distance
+                previousPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDragging) return;
+
+            if (e.touches.length === 1) {
+                // Single touch - rotate
+                const deltaMove = {
+                    x: e.touches[0].clientX - previousTouch.x,
+                    y: e.touches[0].clientY - previousTouch.y
+                };
+
+                scene.rotation.y += deltaMove.x * 0.005;
+                scene.rotation.x += deltaMove.y * 0.005;
+
+                previousTouch = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY
+                };
+            } else if (e.touches.length === 2) {
+                // Pinch to zoom
+                const currentPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                const pinchDelta = currentPinchDistance - previousPinchDistance;
+                camera.position.z -= pinchDelta * 0.05;
+                camera.position.z = Math.max(5, Math.min(camera.position.z, 100));
+
+                previousPinchDistance = currentPinchDistance;
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            isDragging = false;
+        });
+
+        document.addEventListener('touchcancel', (e) => {
+            isDragging = false;
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>
