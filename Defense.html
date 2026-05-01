@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defense Mechanisms Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .category-badge {
+            transition: all 0.2s ease;
+        }
+        .category-badge:hover {
+            transform: scale(1.05);
+        }
+        
+        .tactic-tag {
+            transition: all 0.2s ease;
+        }
+        .tactic-tag:hover {
+            transform: scale(1.05);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        
+        .modal-enter {
+            animation: modalIn 0.3s ease-out;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .category-filter.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        
+        .scroll-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            z-index: 50;
+            transition: width 0.1s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+    <!-- Scroll Progress -->
+    <div class="scroll-indicator" id="scrollIndicator"></div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-md bg-white/90">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                        <i class="fas fa-shield-halved text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 tracking-tight">Defense Mechanisms</h1>
+                        <p class="text-xs text-gray-500 font-medium">Psychological Defense Explorer</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-500 hidden sm:inline" id="totalCount">Loading...</span>
+                    <button onclick="toggleView()" class="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Toggle View">
+                        <i class="fas fa-th-large text-gray-600"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Controls -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Search -->
+        <div class="relative mb-6">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <i class="fas fa-search text-gray-400"></i>
+            </div>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Search mechanisms, tactics, or explanations..." 
+                class="search-input w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-all"
+            >
+        </div>
+
+        <!-- Category Filters -->
+        <div class="flex flex-wrap gap-2 mb-6" id="categoryFilters">
+            <button onclick="filterCategory('all')" class="category-filter active px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                <i class="fas fa-layer-group mr-2"></i>All
+            </button>
+            <button onclick="filterCategory('Primitive')" class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-all">
+                <i class="fas fa-fire mr-2"></i>Primitive
+            </button>
+            <button onclick="filterCategory('Neurotic')" class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all">
+                <i class="fas fa-brain mr-2"></i>Neurotic
+            </button>
+            <button onclick="filterCategory('Mature')" class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all">
+                <i class="fas fa-leaf mr-2"></i>Mature
+            </button>
+            <button onclick="filterCategory('Other')" class="category-filter px-4 py-2 rounded-full text-sm font-medium bg-slate-50 text-slate-700 hover:bg-slate-100 transition-all">
+                <i class="fas fa-ellipsis mr-2"></i>Other
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="statsContainer">
+            <!-- Stats will be injected here -->
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="cardsContainer">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-20">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-search text-gray-400 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">No results found</h3>
+            <p class="text-gray-500">Try adjusting your search or filters</p>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="relative min-h-screen flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto modal-enter">
+                <div id="modalContent">
+                    <!-- Modal content injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const data = [
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Denial",
+                "Tactical Strategies": "Contradictory statements; Feigned confusion; Blaming; Playing victim; Purposeful misunderstanding; Dismissiveness",
+                "Explanation": "Refusal to accept reality.",
+                "Causes": "Ego threat; overwhelming stress; trauma; inability to integrate reality"
+            },
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Projection",
+                "Tactical Strategies": "Blaming; Argumentativeness; Playing victim; Catastrophizing; Distancing; Accusatory questioning",
+                "Explanation": "Attributing unwanted feelings to others.",
+                "Causes": "Unacceptable impulses; shame; low self-awareness; emotional conflict"
+            },
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Splitting",
+                "Tactical Strategies": "Black-and-white thinking; Idealizing then devaluing; Emotional extremes",
+                "Explanation": "Viewing people/situations in extremes.",
+                "Causes": "Personality organization issues; attachment instability; high stress"
+            },
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Acting Out",
+                "Tactical Strategies": "Interrupting; Storming out; Raising voice; Emotional outbursts",
+                "Explanation": "Expressing conflict through behavior.",
+                "Causes": "Impulse dysregulation; high emotional arousal; poor verbal processing"
+            },
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Idealization",
+                "Tactical Strategies": "Excessive praise; Overlooking flaws; Excessive agreement",
+                "Explanation": "Exaggerated positive attribution.",
+                "Causes": "Insecurity; dependency needs; attachment deficits"
+            },
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Devaluation",
+                "Tactical Strategies": "Sarcasm; Belittling; Dismissiveness; Contempt",
+                "Explanation": "Exaggerated negative attribution.",
+                "Causes": "Shame defense; anger; threatened self-esteem"
+            },
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Projective Identification",
+                "Tactical Strategies": "Provoking responses; Manipulative questioning; Blame for reactions",
+                "Explanation": "Inducing projected feelings in others.",
+                "Causes": "Relational trauma; control dynamics; enmeshment"
+            },
+            {
+                "Category": "Primitive",
+                "Formal Defense Mechanism": "Omnipotence",
+                "Tactical Strategies": "Excessive certainty; Dismissing experts; Arrogance",
+                "Explanation": "Sense of superior power/knowledge.",
+                "Causes": "Narcissistic traits; compensation for helplessness"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Repression",
+                "Tactical Strategies": "Vagueness; Forgetfulness; Avoidance; Silent treatment",
+                "Explanation": "Blocking awareness of distress.",
+                "Causes": "Trauma; anxiety; internal conflict"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Intellectualization",
+                "Tactical Strategies": "Technical jargon; Abstract theorizing; Removing emotion",
+                "Explanation": "Emotional detachment via analysis.",
+                "Causes": "Emotional avoidance; anxiety; need for control"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Displacement",
+                "Tactical Strategies": "Sarcasm; Passive aggression; Joking; Interrupting",
+                "Explanation": "Redirecting emotion to safer targets.",
+                "Causes": "Forbidden aggression; power imbalance; frustration"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Reaction Formation",
+                "Tactical Strategies": "Excessive politeness; Over-agreement; Passive compliance",
+                "Explanation": "Acting opposite of true feelings.",
+                "Causes": "Guilt; unacceptable impulses; social anxiety"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Rationalization",
+                "Tactical Strategies": "Justifying behavior; Tangential responses; Deflection",
+                "Explanation": "Logical excuses for emotional conflict.",
+                "Causes": "Cognitive dissonance; self-esteem protection"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Isolation of Affect",
+                "Tactical Strategies": "Detached recounting; Monotone speech; Emotional withdrawal",
+                "Explanation": "Separating feeling from content.",
+                "Causes": "Trauma; anxiety; coping detachment habit"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Undoing",
+                "Tactical Strategies": "Over-apologizing; Excessive checking; Rituals",
+                "Explanation": "Trying to reverse unacceptable thoughts/actions.",
+                "Causes": "Guilt; obsessive-compulsive tendencies"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Compensation",
+                "Tactical Strategies": "Self-promotion; Topic shifting to strengths",
+                "Explanation": "Covering weakness with strengths.",
+                "Causes": "Inferiority feelings; self-esteem deficits"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Regression",
+                "Tactical Strategies": "Victim behavior; Helplessness; Over-apologizing",
+                "Explanation": "Reverting to earlier developmental state.",
+                "Causes": "Stress; trauma; dependency needs"
+            },
+            {
+                "Category": "Neurotic",
+                "Formal Defense Mechanism": "Compartmentalization",
+                "Tactical Strategies": "Inconsistent responses; Context switching",
+                "Explanation": "Separating conflicting beliefs/emotions.",
+                "Causes": "Cognitive conflict; moral inconsistency; stress"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Sublimation",
+                "Tactical Strategies": "Humor; Creative reframing; Jokes",
+                "Explanation": "Channeling impulses into acceptable forms.",
+                "Causes": "Strong drives; socialization; adaptive coping development"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Suppression",
+                "Tactical Strategies": "Topic delay; Withdrawal; Silent treatment",
+                "Explanation": "Consciously postponing emotional response.",
+                "Causes": "Executive control; anxiety management"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Introjection",
+                "Tactical Strategies": "Self-criticism; Over-apologizing; Compliance",
+                "Explanation": "Internalizing external values.",
+                "Causes": "Authority internalization; dependency; attachment learning"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Altruism",
+                "Tactical Strategies": "Helping others; Self-sacrifice statements",
+                "Explanation": "Deriving meaning from helping others.",
+                "Causes": "Secure attachment; meaning-making needs"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Humor",
+                "Tactical Strategies": "Witty reframing; Self-deprecating humor",
+                "Explanation": "Expressing emotion through humor.",
+                "Causes": "Cognitive flexibility; reappraisal ability"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Anticipation",
+                "Tactical Strategies": "Planning; Future-focused thinking",
+                "Explanation": "Preparing for future stress.",
+                "Causes": "Executive functioning; anxiety regulation"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Identification",
+                "Tactical Strategies": "Modeling behavior; Adopting traits",
+                "Explanation": "Internalizing others' characteristics.",
+                "Causes": "Social learning; role modeling exposure"
+            },
+            {
+                "Category": "Mature",
+                "Formal Defense Mechanism": "Self-observation",
+                "Tactical Strategies": "Self-reflection; Metacognition",
+                "Explanation": "Observing one's own mental states.",
+                "Causes": "Therapy exposure; metacognitive development"
+            },
+            {
+                "Category": "Other",
+                "Formal Defense Mechanism": "Avoidance",
+                "Tactical Strategies": "Topic shifting; Withdrawal; Deflection",
+                "Explanation": "Avoiding threatening stimuli.",
+                "Causes": "Fear conditioning; anxiety; stress response"
+            },
+            {
+                "Category": "Other",
+                "Formal Defense Mechanism": "Minimization",
+                "Tactical Strategies": "Downplaying; Dismissiveness",
+                "Explanation": "Reducing perceived severity.",
+                "Causes": "Fear of vulnerability; denial tendencies"
+            },
+            {
+                "Category": "Other",
+                "Formal Defense Mechanism": "Dissociation",
+                "Tactical Strategies": "Zoning out; Depersonalization; Distancing",
+                "Explanation": "Detaching from experience.",
+                "Causes": "Trauma; PTSD; overwhelming stress"
+            },
+            {
+                "Category": "Other",
+                "Formal Defense Mechanism": "Isolation",
+                "Tactical Strategies": "Withdrawal; Silent treatment",
+                "Explanation": "Separation from social/emotional input.",
+                "Causes": "Social anxiety; perceived threat"
+            },
+            {
+                "Category": "Other",
+                "Formal Defense Mechanism": "Passive-Aggressive Behavior",
+                "Tactical Strategies": "Procrastination; Subtle sabotage; Silent treatment",
+                "Explanation": "Indirect expression of hostility.",
+                "Causes": "Conflict avoidance; resentment; poor assertiveness"
+            },
+            {
+                "Category": "Other",
+                "Formal Defense Mechanism": "Fantasy",
+                "Tactical Strategies": "Daydreaming; Hypothetical narratives",
+                "Explanation": "Escaping into imagination.",
+                "Causes": "Unmet needs; dissatisfaction; boredom"
+            },
+            {
+                "Category": "Other",
+                "Formal Defense Mechanism": "Somatization",
+                "Tactical Strategies": "Physical complaints; Symptom focus",
+                "Explanation": "Psychological stress expressed physically.",
+                "Causes": "Stress; alexithymia; emotional awareness deficits"
+            }
+        ];
+
+        // Category configurations
+        const categoryConfig = {
+            'Primitive': {
+                color: 'red',
+                icon: 'fa-fire',
+                bg: 'bg-red-50',
+                text: 'text-red-700',
+                border: 'border-red-200',
+                badge: 'bg-red-100 text-red-800'
+            },
+            'Neurotic': {
+                color: 'amber',
+                icon: 'fa-brain',
+                bg: 'bg-amber-50',
+                text: 'text-amber-700',
+                border: 'border-amber-200',
+                badge: 'bg-amber-100 text-amber-800'
+            },
+            'Mature': {
+                color: 'emerald',
+                icon: 'fa-leaf',
+                bg: 'bg-emerald-50',
+                text: 'text-emerald-700',
+                border: 'border-emerald-200',
+                badge: 'bg-emerald-100 text-emerald-800'
+            },
+            'Other': {
+                color: 'slate',
+                icon: 'fa-ellipsis',
+                bg: 'bg-slate-50',
+                text: 'text-slate-700',
+                border: 'border-slate-200',
+                badge: 'bg-slate-100 text-slate-800'
+            }
+        };
+
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderStats();
+            renderCards();
+            setupSearch();
+            setupScrollIndicator();
+        });
+
+        function setupScrollIndicator() {
+            window.addEventListener('scroll', () => {
+                const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const scrolled = (winScroll / height) * 100;
+                document.getElementById('scrollIndicator').style.width = scrolled + '%';
+            });
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderCards();
+            });
+        }
+
+        function filterCategory(category) {
+            currentFilter = category;
+            
+            // Update button states
+            document.querySelectorAll('.category-filter').forEach(btn => {
+                btn.classList.remove('active');
+                if (category === 'all' && btn.textContent.includes('All')) {
+                    btn.classList.add('active');
+                } else if (btn.textContent.includes(category)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            renderCards();
+        }
+
+        function getFilteredData() {
+            return data.filter(item => {
+                const matchesCategory = currentFilter === 'all' || item.Category === currentFilter;
+                const matchesSearch = !searchQuery || 
+                    item['Formal Defense Mechanism'].toLowerCase().includes(searchQuery) ||
+                    item['Tactical Strategies'].toLowerCase().includes(searchQuery) ||
+                    item.Explanation.toLowerCase().includes(searchQuery) ||
+                    item.Causes.toLowerCase().includes(searchQuery);
+                return matchesCategory && matchesSearch;
+            });
+        }
+
+        function renderStats() {
+            const categories = ['Primitive', 'Neurotic', 'Mature', 'Other'];
+            const statsContainer = document.getElementById('statsContainer');
+            
+            const stats = categories.map(cat => ({
+                name: cat,
+                count: data.filter(d => d.Category === cat).length,
+                config: categoryConfig[cat]
+            }));
+
+            statsContainer.innerHTML = stats.map(stat => `
+                <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="filterCategory('${stat.name}')">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="w-8 h-8 rounded-lg ${stat.config.bg} flex items-center justify-center">
+                            <i class="fas ${stat.config.icon} ${stat.config.text} text-sm"></i>
+                        </div>
+                        <span class="text-2xl font-bold text-gray-900">${stat.count}</span>
+                    </div>
+                    <p class="text-sm font-medium text-gray-600">${stat.name}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderCards() {
+            const filtered = getFilteredData();
+            const container = document.getElementById('cardsContainer');
+            const emptyState = document.getElementById('emptyState');
+            const totalCount = document.getElementById('totalCount');
+            
+            totalCount.textContent = `${filtered.length} mechanism${filtered.length !== 1 ? 's' : ''}`;
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            container.innerHTML = filtered.map((item, index) => {
+                const config = categoryConfig[item.Category];
+                const tactics = item['Tactical Strategies'].split(';').map(t => t.trim());
+                
+                return `
+                    <div class="card-hover bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer fade-in" 
+                         style="animation-delay: ${index * 0.05}s"
+                         onclick="openModal(${data.indexOf(item)})">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center">
+                                        <i class="fas ${config.icon} ${config.text}"></i>
+                                    </div>
+                                    <div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.badge} mb-1">
+                                            ${item.Category}
+                                        </span>
+                                        <h3 class="text-lg font-bold text-gray-900 leading-tight">${item['Formal Defense Mechanism']}</h3>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-300 text-sm"></i>
+                            </div>
+                            
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">${item.Explanation}</p>
+                            
+                            <div class="flex flex-wrap gap-1.5">
+                                ${tactics.slice(0, 3).map(tactic => `
+                                    <span class="tactic-tag inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-600 border border-gray-100">
+                                        ${tactic}
+                                    </span>
+                                `).join('')}
+                                ${tactics.length > 3 ? `
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-400 border border-gray-100">
+                                        +${tactics.length - 3} more
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
+                            <i class="fas fa-heart-pulse text-gray-400"></i>
+                            <span class="truncate">${item.Causes.split(';')[0]}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openModal(index) {
+            const item = data[index];
+            const config = categoryConfig[item.Category];
+            const tactics = item['Tactical Strategies'].split(';').map(t => t.trim());
+            const causes = item.Causes.split(';').map(c => c.trim());
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="relative">
+                    <div class="absolute top-4 right-4 z-10">
+                        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                            <i class="fas fa-times text-gray-600"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-14 h-14 rounded-2xl ${config.bg} flex items-center justify-center shadow-sm">
+                                <i class="fas ${config.icon} ${config.text} text-xl"></i>
+                            </div>
+                            <div>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${config.badge} mb-1">
+                                    ${item.Category} Defense
+                                </span>
+                                <h2 class="text-2xl font-bold text-gray-900">${item['Formal Defense Mechanism']}</h2>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-circle-info text-indigo-500 text-sm"></i>
+                                    <h4 class="font-semibold text-gray-900 text-sm">Explanation</h4>
+                                </div>
+                                <p class="text-gray-700 leading-relaxed">${item.Explanation}</p>
+                            </div>
+                            
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fas fa-chess text-indigo-500 text-sm"></i>
+                                    <h4 class="font-semibold text-gray-900 text-sm">Tactical Strategies</h4>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    ${tactics.map(tactic => `
+                                        <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            <i class="fas fa-tag text-xs mr-1.5 opacity-60"></i>
+                                            ${tactic}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fas fa-seedling text-indigo-500 text-sm"></i>
+                                    <h4 class="font-semibold text-gray-900 text-sm">Underlying Causes</h4>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    ${causes.map(cause => `
+                                        <div class="flex items-start gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100">
+                                            <i class="fas fa-circle text-[6px] text-gray-400 mt-1.5"></i>
+                                            <span class="text-sm text-gray-700">${cause.trim()}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                            <button onclick="closeModal()" class="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function toggleView() {
+            // Toggle between grid and list view (placeholder for future enhancement)
+            const container = document.getElementById('cardsContainer');
+            container.classList.toggle('grid-cols-1');
+            container.classList.toggle('md:grid-cols-2');
+            container.classList.toggle('lg:grid-cols-3');
+        }
+    </script>
+</body>
+</html>
+
