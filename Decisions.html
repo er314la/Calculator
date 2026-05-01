@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognitive Decision-Making Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Card Hover Effects */
+        .concept-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .concept-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: left 0.5s;
+        }
+        
+        .concept-card:hover::before {
+            left: 100%;
+        }
+        
+        .concept-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Section Colors */
+        .section-strategies { border-left: 4px solid #3b82f6; }
+        .section-biases { border-left: 4px solid #ef4444; }
+        .section-risk { border-left: 4px solid #f59e0b; }
+        .section-choice { border-left: 4px solid #10b981; }
+        .section-control { border-left: 4px solid #8b5cf6; }
+        .section-social { border-left: 4px solid #ec4899; }
+        .section-economic { border-left: 4px solid #06b6d4; }
+        .section-memory { border-left: 4px solid #f97316; }
+        .section-meta { border-left: 4px solid #6366f1; }
+        .section-cultural { border-left: 4px solid #14b8a6; }
+
+        /* Icon Animation */
+        .icon-wrapper {
+            transition: transform 0.3s ease;
+        }
+        .concept-card:hover .icon-wrapper {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Filter Animation */
+        .filter-btn {
+            transition: all 0.2s ease;
+        }
+        .filter-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: currentColor;
+            transform: scale(1.05);
+        }
+
+        /* Search Highlight */
+        .highlight {
+            background: rgba(251, 191, 36, 0.3);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* Modal Animation */
+        .modal-enter {
+            animation: modalIn 0.3s ease-out;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Grid Layout */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Background Pattern */
+        .bg-pattern {
+            background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="bg-pattern min-h-screen">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <i class="fas fa-brain text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Cognitive Explorer</h1>
+                        <p class="text-xs text-slate-400">Decision-Making & Behavioral Economics</p>
+                    </div>
+                </div>
+                
+                <!-- Search -->
+                <div class="relative w-full md:w-96">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Search concepts..." 
+                           class="w-full bg-slate-800 border border-slate-600 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                </div>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="flex flex-wrap gap-2 mt-4 justify-center md:justify-start" id="filterContainer">
+                <button class="filter-btn active px-4 py-1.5 rounded-full text-xs font-medium border border-slate-600 text-slate-300 hover:bg-slate-800" data-section="all">
+                    All <span class="ml-1 text-slate-500" id="count-all">60</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-blue-500/30 text-blue-400 hover:bg-blue-500/10" data-section="strategies">
+                    Strategies <span class="ml-1 text-slate-500" id="count-strategies">10</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10" data-section="biases">
+                    Biases <span class="ml-1 text-slate-500" id="count-biases">13</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-amber-500/30 text-amber-400 hover:bg-amber-500/10" data-section="risk">
+                    Risk <span class="ml-1 text-slate-500" id="count-risk">11</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" data-section="choice">
+                    Choice <span class="ml-1 text-slate-500" id="count-choice">11</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-violet-500/30 text-violet-400 hover:bg-violet-500/10" data-section="control">
+                    Self-Control <span class="ml-1 text-slate-500" id="count-control">10</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-pink-500/30 text-pink-400 hover:bg-pink-500/10" data-section="social">
+                    Social <span class="ml-1 text-slate-500" id="count-social">13</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10" data-section="economic">
+                    Economic <span class="ml-1 text-slate-500" id="count-economic">11</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-orange-500/30 text-orange-400 hover:bg-orange-500/10" data-section="memory">
+                    Memory <span class="ml-1 text-slate-500" id="count-memory">10</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10" data-section="meta">
+                    Metacognitive <span class="ml-1 text-slate-500" id="count-meta">9</span>
+                </button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium border border-teal-500/30 text-teal-400 hover:bg-teal-500/10" data-section="cultural">
+                    Cultural <span class="ml-1 text-slate-500" id="count-cultural">8</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div id="cardsContainer" class="cards-grid">
+            <!-- Cards will be injected here by JavaScript -->
+        </div>
+        
+        <!-- No Results Message -->
+        <div id="noResults" class="hidden text-center py-20">
+            <i class="fas fa-search text-4xl text-slate-600 mb-4"></i>
+            <p class="text-slate-400 text-lg">No concepts found matching your search.</p>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+            <div id="modalContent" class="bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-700 pointer-events-auto modal-enter max-h-[90vh] overflow-y-auto">
+                <!-- Modal content injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure
+        const sections = {
+            strategies: { title: "Decision-Making Strategies", color: "blue", icon: "fa-chess-knight", count: 10 },
+            biases: { title: "Cognitive Biases and Errors", color: "red", icon: "fa-exclamation-triangle", count: 13 },
+            risk: { title: "Risk and Uncertainty", color: "amber", icon: "fa-balance-scale", count: 11 },
+            choice: { title: "Choice and Preference", color: "emerald", icon: "fa-list-check", count: 11 },
+            control: { title: "Self-Control and Motivation", color: "violet", icon: "fa-hand-fist", count: 10 },
+            social: { title: "Social Influences", color: "pink", icon: "fa-users", count: 13 },
+            economic: { title: "Economic and Financial", color: "cyan", icon: "fa-coins", count: 11 },
+            memory: { title: "Memory and Attention", color: "orange", icon: "fa-brain", count: 10 },
+            meta: { title: "Metacognitive Influences", color: "indigo", icon: "fa-eye", count: 9 },
+            cultural: { title: "Cultural and Developmental", color: "teal", icon: "fa-globe", count: 8 }
+        };
+
+        const concepts = [
+            // 1. Decision-Making Strategies (10)
+            { id: "heuristics", section: "strategies", title: "Heuristics", icon: "fa-bolt", desc: "Mental shortcuts (e.g., Availability, Representativeness, Affect, Take-the-best) that allow quick judgments using limited information." },
+            { id: "satisficing", section: "strategies", title: "Satisficing", icon: "fa-check-circle", desc: "Choosing the first option that is 'good enough' rather than searching for the optimal solution." },
+            { id: "elimination", section: "strategies", title: "Elimination-by-Aspects", icon: "fa-filter", desc: "Systematically eliminating options that fail to meet a minimum standard on the most important attributes." },
+            { id: "chunking", section: "strategies", title: "Chunking", icon: "fa-cubes", desc: "Grouping individual pieces of information into larger, meaningful units to reduce cognitive load." },
+            { id: "fast-frugal", section: "strategies", title: "Fast and Frugal", icon: "fa-rabbit", desc: "Using simple, ecologically rational rules that work well with limited time and information." },
+            { id: "lexicographic", section: "strategies", title: "Lexicographic", icon: "fa-arrow-down-a-z", desc: "Ranking options based solely on the most important attribute first, then the next, like a dictionary order." },
+            { id: "recognition", section: "strategies", title: "Recognition Heuristic", icon: "fa-eye", desc: "Choosing the recognized option over an unrecognized one when knowledge is limited." },
+            { id: "cost-benefit", section: "strategies", title: "Cost-Benefit Analysis", icon: "fa-scale-balanced", desc: "Systematically weighing the expected advantages and disadvantages of each option." },
+            { id: "multi-attribute", section: "strategies", title: "Multi-Attribute Utility", icon: "fa-table-columns", desc: "Evaluating and comparing options across several relevant dimensions using assigned weights and utilities." },
+            { id: "bounded-rationality", section: "strategies", title: "Bounded Rationality", icon: "fa-border-all", desc: "Making satisfactory decisions under real-world constraints of limited time, information, and cognitive capacity." },
+
+            // 2. Cognitive Biases and Errors (13)
+            { id: "anchoring", section: "biases", title: "Anchoring", icon: "fa-anchor", desc: "Over-relying on the first piece of information encountered (the 'anchor') when making subsequent judgments." },
+            { id: "confirmation", section: "biases", title: "Confirmation Bias", icon: "fa-magnifying-glass-plus", desc: "Tendency to search for, interpret, and favor information that confirms preexisting beliefs." },
+            { id: "overconfidence", section: "biases", title: "Overconfidence Effect", icon: "fa-chart-line", desc: "Overestimating one's own knowledge, abilities, or the accuracy of one's predictions." },
+            { id: "hindsight", section: "biases", title: "Hindsight Bias", icon: "fa-clock-rotate-left", desc: "The tendency to see past events as more predictable than they actually were ('I knew it all along')." },
+            { id: "gamblers-fallacy", section: "biases", title: "Gambler's Fallacy", icon: "fa-dice", desc: "Mistaken belief that past random events influence the probabilities of future independent events." },
+            { id: "sunk-cost", section: "biases", title: "Sunk Cost Fallacy", icon: "fa-money-bill-wave", desc: "Continuing a behavior due to previously invested resources rather than future prospects." },
+            { id: "illusion-control", section: "biases", title: "Illusion of Control", icon: "fa-gamepad", desc: "Overestimating one's ability to control or influence outcomes largely determined by chance." },
+            { id: "dunning-kruger", section: "biases", title: "Dunning-Kruger Effect", icon: "fa-mountain", desc: "Low-ability individuals overestimating their competence, while high-ability individuals may underestimate theirs." },
+            { id: "bandwagon", section: "biases", title: "Bandwagon Effect", icon: "fa-wagon", desc: "Adopting beliefs or behaviors because many other people hold them." },
+            { id: "blind-spot", section: "biases", title: "Blind Spot Bias", icon: "fa-eye-slash", desc: "Recognizing cognitive biases in others while failing to see them in oneself." },
+            { id: "curse-knowledge", section: "biases", title: "Curse of Knowledge", icon: "fa-book", desc: "Difficulty imagining or communicating from the perspective of someone lacking one's own knowledge." },
+            { id: "negativity", section: "biases", title: "Negativity Bias", icon: "fa-cloud-rain", desc: "Greater psychological impact of negative events or information compared to positive ones." },
+            { id: "optimism", section: "biases", title: "Optimism Bias", icon: "fa-sun", desc: "Tendency to overestimate the likelihood of positive outcomes and underestimate negative ones." },
+
+            // 3. Risk and Uncertainty (11)
+            { id: "prospect-theory", section: "risk", title: "Prospect Theory", icon: "fa-chart-area", desc: "People evaluate gains and losses relative to a reference point, with losses looming larger than gains." },
+            { id: "risk-aversion", section: "risk", title: "Risk Aversion/Tolerance", icon: "fa-shield-halved", desc: "Preference for certain outcomes over risky ones (aversion) or willingness to accept risk (tolerance)." },
+            { id: "ambiguity", section: "risk", title: "Ambiguity Aversion", icon: "fa-question-circle", desc: "Strong preference for known risks over unknown or ambiguous risks." },
+            { id: "loss-aversion", section: "risk", title: "Loss Aversion", icon: "fa-arrow-trend-down", desc: "Psychological pain of losses is greater than the pleasure of equivalent gains." },
+            { id: "myopic", section: "risk", title: "Myopic Loss Aversion", icon: "fa-glasses", desc: "Excessive focus on short-term losses, leading to overly conservative decisions." },
+            { id: "risk-feelings", section: "risk", title: "Risk-as-Feelings", icon: "fa-heart-pulse", desc: "Emotional reactions often drive risk perception more than cognitive evaluations." },
+            { id: "hyperbolic", section: "risk", title: "Hyperbolic Discounting", icon: "fa-percent", desc: "Tendency to disproportionately value immediate rewards over larger future rewards." },
+            { id: "black-swan", section: "risk", title: "Black Swan Blindness", icon: "fa-crow", desc: "Failure to adequately consider rare but high-impact events." },
+            { id: "risk-compensation", section: "risk", title: "Risk Compensation", icon: "fa-helmet-safety", desc: "Taking greater risks when perceived safety increases (e.g., wearing a seatbelt and driving faster)." },
+            { id: "salience-risk", section: "risk", title: "Salience Bias", icon: "fa-bullhorn", desc: "Over-focusing on vivid, emotionally striking information rather than statistically relevant data." },
+            { id: "expected-utility", section: "risk", title: "Expected Utility Theory", icon: "fa-calculator", desc: "Classical economic model calculating desirability by multiplying probability and utility." },
+
+            // 4. Choice and Preference (11)
+            { id: "framing", section: "choice", title: "Framing Effect", icon: "fa-frame", desc: "Decisions are heavily influenced by how choices are presented or 'framed' (gain vs. loss)." },
+            { id: "default", section: "choice", title: "Default Bias", icon: "fa-toggle-on", desc: "Strong tendency to stick with pre-selected or default options." },
+            { id: "choice-overload", section: "choice", title: "Choice Overload", icon: "fa-bars-staggered", desc: "Having too many options can lead to anxiety, indecision, or poorer choices." },
+            { id: "preference-reversal", section: "choice", title: "Preference Reversal", icon: "fa-arrows-rotate", desc: "People's stated preferences change depending on how choices are elicited or contextualized." },
+            { id: "less-is-better", section: "choice", title: "Less-is-Better Effect", icon: "fa-compress", desc: "People sometimes prefer a smaller set of options when evaluated in isolation rather than jointly." },
+            { id: "decoy", section: "choice", title: "Decoy Effect", icon: "fa-bullseye", desc: "Introducing an inferior 'decoy' option can shift preference toward a target option." },
+            { id: "compromise", section: "choice", title: "Compromise Effect", icon: "fa-arrows-left-right", desc: "People tend to prefer middle or compromise options when faced with extremes." },
+            { id: "authority-choice", section: "choice", title: "Authority Bias", icon: "fa-user-tie", desc: "Tendency to over-value opinions and directives from perceived authority figures." },
+            { id: "status-quo", section: "choice", title: "Status Quo Bias", icon: "fa-pause", desc: "Strong preference for maintaining the current situation rather than changing it." },
+            { id: "priming", section: "choice", title: "Priming Effects", icon: "fa-key", desc: "Subtle exposure to stimuli that unconsciously influences later decisions and behavior." },
+            { id: "endowment", section: "choice", title: "Endowment Effect", icon: "fa-hand-holding-heart", desc: "People assign higher value to things simply because they own them." },
+
+            // 5. Self-Control and Motivation (10)
+            { id: "present-bias", section: "control", title: "Present Bias", icon: "fa-hourglass-half", desc: "Giving stronger weight to immediate rewards and costs than to future ones." },
+            { id: "intertemporal", section: "control", title: "Intertemporal Choice", icon: "fa-calendar-days", desc: "Making decisions involving trade-offs between outcomes occurring at different times." },
+            { id: "ego-depletion", section: "control", title: "Ego Depletion", icon: "fa-battery-quarter", desc: "The idea that self-control is a limited resource that becomes exhausted after use." },
+            { id: "commitment", section: "control", title: "Commitment & Precommitment", icon: "fa-lock", desc: "Voluntarily restricting one's future choices to promote long-term goals." },
+            { id: "licensing", section: "control", title: "Licensing Effect", icon: "fa-id-card", desc: "Feeling permitted to indulge after performing a virtuous or good action." },
+            { id: "implementation", section: "control", title: "Implementation Intentions", icon: "fa-code-branch", desc: "Forming specific 'if-then' plans to increase the likelihood of goal-directed behavior." },
+            { id: "willpower", section: "control", title: "Willpower as Resource", icon: "fa-dumbbell", desc: "Viewing self-control as a finite strength that fatigues with use." },
+            { id: "choice-architecture", section: "control", title: "Choice Architecture", icon: "fa-building", desc: "Deliberately designing environments to nudge people toward better decisions." },
+            { id: "reactance", section: "control", title: "Psychological Reactance", icon: "fa-ban", desc: "Negative emotional reaction when one's freedom of choice is threatened or restricted." },
+            { id: "temptation", section: "control", title: "Temptation Bundling", icon: "fa-gift", desc: "Linking an undesirable activity with a desirable one to increase motivation." },
+
+            // 6. Social Influences (13)
+            { id: "social-norms", section: "social", title: "Social Norms", icon: "fa-users-rectangle", desc: "Unwritten rules about acceptable behavior that guide decisions within a group." },
+            { id: "social-proof", section: "social", title: "Social Proof", icon: "fa-user-check", desc: "Relying on others' actions as evidence of correct behavior, especially in uncertain situations." },
+            { id: "herd", section: "social", title: "Herd Behavior", icon: "fa-cow", desc: "Tendency to follow the crowd, often leading to collective irrationality." },
+            { id: "reciprocity", section: "social", title: "Reciprocity", icon: "fa-handshake", desc: "Feeling obligated to return favors or concessions previously received." },
+            { id: "fairness", section: "social", title: "Fairness Aversion", icon: "fa-scale-unbalanced", desc: "Strong dislike of unfair distributions, even at personal cost." },
+            { id: "altruism", section: "social", title: "Altruism", icon: "fa-hand-holding-medical", desc: "Helping others without expecting direct personal benefit." },
+            { id: "trust", section: "social", title: "Trust", icon: "fa-handshake-simple", desc: "Willingness to make oneself vulnerable based on expectations of others' reliability." },
+            { id: "groupthink", section: "social", title: "Groupthink", icon: "fa-people-group", desc: "Prioritizing group consensus and harmony over critical evaluation of alternatives." },
+            { id: "bystander", section: "social", title: "Bystander Effect", icon: "fa-person-walking-arrow-right", desc: "Reduced likelihood of helping when other people are present (diffusion of responsibility)." },
+            { id: "authority-social", section: "social", title: "Authority Bias", icon: "fa-crown", desc: "Tendency to comply with or over-trust directives from authority figures." },
+            { id: "social-identity", section: "social", title: "Social Identity Theory", icon: "fa-fingerprint", desc: "Decisions shaped by the desire to maintain a positive group identity." },
+            { id: "ingroup", section: "social", title: "Ingroup Favoritism", icon: "fa-user-group", desc: "Preferring and giving better treatment to members of one's own group." },
+            { id: "conformity", section: "social", title: "Conformity", icon: "fa-equals", desc: "Adjusting one's behavior or beliefs to align with those of the group." },
+
+            // 7. Economic and Financial (11)
+            { id: "mental-accounting", section: "economic", title: "Mental Accounting", icon: "fa-wallet", desc: "Treating money differently depending on its subjective source or intended use." },
+            { id: "pain-paying", section: "economic", title: "Pain of Paying", icon: "fa-credit-card", desc: "Psychological discomfort experienced when spending money." },
+            { id: "zero-price", section: "economic", title: "Zero Price Effect", icon: "fa-gift", desc: "People dramatically overvalue items that are free compared to very cheap ones." },
+            { id: "disposition", section: "economic", title: "Disposition Effect", icon: "fa-chart-pie", desc: "Tendency to sell winning investments too early and hold losing ones too long." },
+            { id: "diversification", section: "economic", title: "Diversification Bias", icon: "fa-sitemap", desc: "Spreading resources too thinly across too many options." },
+            { id: "house-money", section: "economic", title: "House Money Effect", icon: "fa-coins", desc: "Becoming more risk-seeking with money that was recently won or 'house money'." },
+            { id: "money-illusion", section: "economic", title: "Money Illusion", icon: "fa-eye", desc: "Focusing on nominal dollar amounts rather than real purchasing power." },
+            { id: "ostrich", section: "economic", title: "Ostrich Effect", icon: "fa-feather", desc: "Avoiding or ignoring negative financial information." },
+            { id: "endowment-invest", section: "economic", title: "Endowment Effect", icon: "fa-gem", desc: "Overvaluing assets simply because one owns them." },
+            { id: "status-quo-invest", section: "economic", title: "Status Quo Bias", icon: "fa-folder-closed", desc: "Reluctance to change or rebalance investment portfolios." },
+            { id: "representativeness-invest", section: "economic", title: "Representativeness", icon: "fa-chart-simple", desc: "Assuming future performance will resemble recent past performance." },
+
+            // 8. Memory and Attention (10)
+            { id: "peak-end", section: "memory", title: "Peak-End Rule", icon: "fa-mountain-sun", desc: "Experiences are judged primarily by their most intense (peak) moment and how they end." },
+            { id: "duration-neglect", section: "memory", title: "Duration Neglect", icon: "fa-clock", desc: "The length of an experience has little impact on how it is remembered or evaluated." },
+            { id: "recency", section: "memory", title: "Recency Bias", icon: "fa-arrow-right-to-bracket", desc: "Giving disproportionate weight to the most recent information or events." },
+            { id: "attentional", section: "memory", title: "Attentional Bias", icon: "fa-crosshairs", desc: "Selectively focusing attention on certain stimuli while ignoring others." },
+            { id: "fluency", section: "memory", title: "Fluency Heuristic", icon: "fa-water", desc: "Preferring information that is easier to process or understand." },
+            { id: "distinctiveness", section: "memory", title: "Distinctiveness Effect", icon: "fa-star", desc: "Unusual or distinctive information is remembered better." },
+            { id: "source-amnesia", section: "memory", title: "Source Amnesia", icon: "fa-question", desc: "Remembering information but forgetting where it came from." },
+            { id: "spacing", section: "memory", title: "Spacing Effect", icon: "fa-arrows-left-right-to-line", desc: "Information is remembered better when learning is distributed over time." },
+            { id: "salience-memory", section: "memory", title: "Salience Bias", icon: "fa-lightbulb", desc: "Over-focusing on information that stands out rather than what is most relevant." },
+            { id: "context-dependent", section: "memory", title: "Context-Dependent Memory", icon: "fa-map-location-dot", desc: "Memory recall is improved when the retrieval environment matches the learning environment." },
+
+            // 9. Metacognitive (9)
+            { id: "illusion-depth", section: "meta", title: "Illusion of Explanatory Depth", icon: "fa-layer-group", desc: "Overestimating how well one understands complex systems or mechanisms." },
+            { id: "naive-realism", section: "meta", title: "Naïve Realism", icon: "fa-glasses", desc: "Believing one's own perception of reality is objective while others are biased." },
+            { id: "theory-mind", section: "meta", title: "Theory of Mind Limitations", icon: "fa-brain", desc: "Difficulty accurately inferring or understanding other people's mental states." },
+            { id: "metacognitive-myopia", section: "meta", title: "Metacognitive Myopia", icon: "fa-eye-slash", desc: "Failing to adequately monitor or correct one's own thinking processes." },
+            { id: "introspection", section: "meta", title: "Introspection Illusion", icon: "fa-mirror", desc: "Overestimating the accuracy and insight gained from self-reflection." },
+            { id: "fluency-judgment", section: "meta", title: "Fluency Effects", icon: "fa-wind", desc: "The subjective ease of processing information influences confidence and liking." },
+            { id: "epistemic", section: "meta", title: "Epistemic Uncertainty", icon: "fa-book-open", desc: "Recognizing the limits and fallibility of one's own knowledge." },
+            { id: "dunning-kruger-meta", section: "meta", title: "Dunning-Kruger Effect", icon: "fa-face-smile", desc: "Poor performers failing to recognize their own lack of competence." },
+            { id: "cognitive-reflection", section: "meta", title: "Cognitive Reflection", icon: "fa-lightbulb", desc: "The ability (or failure) to override intuitive answers with deliberate analytical thinking." },
+
+            // 10. Cultural and Developmental (8)
+            { id: "cultural-diff", section: "cultural", title: "Cultural Differences", icon: "fa-globe-americas", desc: "Collectivist cultures prioritize group harmony, while individualist cultures emphasize personal preferences." },
+            { id: "developmental-risk", section: "cultural", title: "Developmental Risk", icon: "fa-child", desc: "Adolescents typically show higher risk-taking than children or adults due to brain development." },
+            { id: "cultural-construal", section: "cultural", title: "Cultural Construal", icon: "fa-palette", desc: "How people interpret situations and options is shaped by their cultural frameworks." },
+            { id: "age-related", section: "cultural", title: "Age-Related Changes", icon: "fa-person-cane", desc: "Decision-making abilities and styles evolve across the lifespan." },
+            { id: "educational", section: "cultural", title: "Educational Influences", icon: "fa-graduation-cap", desc: "Formal education improves analytical reasoning and reduces certain biases." },
+            { id: "acculturation", section: "cultural", title: "Acculturation Effects", icon: "fa-plane-arrival", desc: "Adopting decision-making patterns of a new host culture over time." },
+            { id: "environmental", section: "cultural", title: "Environmental Influences", icon: "fa-tree", desc: "Socioeconomic conditions strongly shape risk preferences and aspirations." },
+            { id: "gender-diff", section: "cultural", title: "Gender Differences", icon: "fa-venus-mars", desc: "Socialization often leads to differences in how men and women approach and perceive risk." }
+        ];
+
+        // Color mapping for sections
+        const colorMap = {
+            strategies: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', hover: 'hover:border-blue-500/50', icon: 'text-blue-400' },
+            biases: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/20', hover: 'hover:border-red-500/50', icon: 'text-red-400' },
+            risk: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20', hover: 'hover:border-amber-500/50', icon: 'text-amber-400' },
+            choice: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', hover: 'hover:border-emerald-500/50', icon: 'text-emerald-400' },
+            control: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/20', hover: 'hover:border-violet-500/50', icon: 'text-violet-400' },
+            social: { bg: 'bg-pink-500/10', text: 'text-pink-400', border: 'border-pink-500/20', hover: 'hover:border-pink-500/50', icon: 'text-pink-400' },
+            economic: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20', hover: 'hover:border-cyan-500/50', icon: 'text-cyan-400' },
+            memory: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20', hover: 'hover:border-orange-500/50', icon: 'text-orange-400' },
+            meta: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/20', hover: 'hover:border-indigo-500/50', icon: 'text-indigo-400' },
+            cultural: { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/20', hover: 'hover:border-teal-500/50', icon: 'text-teal-400' }
+        };
+
+        let currentFilter = 'all';
+        let searchTerm = '';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCards();
+            setupEventListeners();
+            updateCounts();
+        });
+
+        function setupEventListeners() {
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    currentFilter = e.currentTarget.dataset.section;
+                    renderCards();
+                });
+            });
+
+            // Search
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchTerm = e.target.value.toLowerCase();
+                renderCards();
+            });
+        }
+
+        function updateCounts() {
+            Object.keys(sections).forEach(section => {
+                const count = concepts.filter(c => c.section === section).length;
+                const el = document.getElementById(`count-${section}`);
+                if (el) el.textContent = count;
+            });
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            const noResults = document.getElementById('noResults');
+            
+            let filtered = concepts;
+            
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(c => c.section === currentFilter);
+            }
+            
+            if (searchTerm) {
+                filtered = filtered.filter(c => 
+                    c.title.toLowerCase().includes(searchTerm) || 
+                    c.desc.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+
+            container.innerHTML = filtered.map(concept => {
+                const colors = colorMap[concept.section];
+                const sectionInfo = sections[concept.section];
+                
+                // Highlight search terms
+                let title = concept.title;
+                let desc = concept.desc;
+                if (searchTerm) {
+                    const regex = new RegExp(`(${searchTerm})`, 'gi');
+                    title = title.replace(regex, '<span class="highlight">$1</span>');
+                    desc = desc.replace(regex, '<span class="highlight">$1</span>');
+                }
+
+                return `
+                    <div class="concept-card bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700 ${colors.hover} cursor-pointer section-${concept.section}"
+                         onclick="openModal('${concept.id}')">
+                        <div class="flex items-start gap-4">
+                            <div class="icon-wrapper w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center flex-shrink-0 border ${colors.border}">
+                                <i class="fas ${concept.icon} ${colors.icon} text-xl"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="text-lg font-semibold text-white truncate">${title}</h3>
+                                </div>
+                                <span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border} mb-2">
+                                    ${sectionInfo.title}
+                                </span>
+                                <p class="text-sm text-slate-400 leading-relaxed line-clamp-3">${desc}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-700/50 flex justify-between items-center">
+                            <span class="text-xs text-slate-500">Click to explore</span>
+                            <i class="fas fa-arrow-right text-xs text-slate-600 group-hover:text-white transition-colors"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openModal(conceptId) {
+            const concept = concepts.find(c => c.id === conceptId);
+            if (!concept) return;
+
+            const colors = colorMap[concept.section];
+            const sectionInfo = sections[concept.section];
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+
+            content.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-14 h-14 ${colors.bg} rounded-xl flex items-center justify-center border ${colors.border}">
+                            <i class="fas ${concept.icon} ${colors.icon} text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">${concept.title}</h2>
+                            <span class="text-sm ${colors.text}">${sectionInfo.title}</span>
+                        </div>
+                    </div>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-white transition-colors p-1">
+                        <i class="fas fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <h4 class="text-sm font-semibold text-slate-300 mb-2 uppercase tracking-wider">Definition</h4>
+                        <p class="text-slate-300 leading-relaxed">${concept.desc}</p>
+                    </div>
+                    
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <h4 class="text-sm font-semibold text-slate-300 mb-2 uppercase tracking-wider">Key Insight</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            This concept illustrates how human decision-making often deviates from purely rational models. 
+                            Understanding this bias/strategy can help improve judgment in ${sectionInfo.title.toLowerCase()} contexts.
+                        </p>
+                    </div>
+
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="closeModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
+                            Close
+                        </button>
+                        <button onclick="shareConcept('${concept.title}')" class="flex-1 ${colors.bg} ${colors.text} border ${colors.border} hover:bg-opacity-20 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-share-nodes"></i> Share
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function shareConcept(title) {
+            if (navigator.share) {
+                navigator.share({
+                    title: `Cognitive Explorer: ${title}`,
+                    text: `Check out this concept: ${title}`,
+                    url: window.location.href
+                });
+            } else {
+                // Fallback - copy to clipboard
+                navigator.clipboard.writeText(`${title} - ${window.location.href}`);
+                alert('Link copied to clipboard!');
+            }
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>
