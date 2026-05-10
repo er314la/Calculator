@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Human Concepts</title>
+
+<style>
+body {
+    margin: 0;
+    background: #111;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+#container {
+    position: relative;
+    width: min(1024px, 95vw);
+}
+
+#background {
+    width: 100%;
+    display: block;
+    border-radius: 12px;
+}
+
+.hotspot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.hotspot:hover {
+    background: rgba(255,255,255,0.18);
+}
+
+#overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+}
+
+#dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(520px, 90vw);
+    background: white;
+    border-radius: 18px;
+    padding: 24px;
+    display: none;
+    z-index: 10;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+
+#dialog h2 {
+    margin-top: 0;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div id="container">
+    <img id="background" src="IMG_4883.jpeg">
+</div>
+
+<div id="overlay"></div>
+
+<div id="dialog">
+    <div class="close" onclick="closeDialog()">×</div>
+    <h2 id="title"></h2>
+    <p id="content"></p>
+</div>
+
+<script>
+
+const hotspots = [
+  {
+    "label": "Emotion",
+    "x": 0.2153,
+    "y": 0.0641,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Emotion"
+  },
+  {
+    "label": "Angst",
+    "x": 0.3796,
+    "y": 0.068,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Angst"
+  },
+  {
+    "label": "Empathy/Sympathy",
+    "x": 0.5552,
+    "y": 0.068,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Empathy/Sympathy"
+  },
+  {
+    "label": "Fear",
+    "x": 0.7167,
+    "y": 0.0621,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Fear"
+  },
+  {
+    "label": "Love",
+    "x": 0.9178,
+    "y": 0.0503,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Love"
+  },
+  {
+    "label": "Failure",
+    "x": 0.2068,
+    "y": 0.1979,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Failure"
+  },
+  {
+    "label": "Growth",
+    "x": 0.3768,
+    "y": 0.1763,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Growth"
+  },
+  {
+    "label": "Instinct",
+    "x": 0.5382,
+    "y": 0.1704,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Instinct"
+  },
+  {
+    "label": "Intuition",
+    "x": 0.7309,
+    "y": 0.1822,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Intuition"
+  },
+  {
+    "label": "Need",
+    "x": 0.9008,
+    "y": 0.1841,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Need"
+  },
+  {
+    "label": "Motivation",
+    "x": 0.2011,
+    "y": 0.3042,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Motivation"
+  },
+  {
+    "label": "Resilience",
+    "x": 0.3654,
+    "y": 0.2865,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Resilience"
+  },
+  {
+    "label": "Self",
+    "x": 0.5467,
+    "y": 0.2747,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Self"
+  },
+  {
+    "label": "Strengths",
+    "x": 0.7139,
+    "y": 0.2963,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Strengths"
+  },
+  {
+    "label": "Weakness",
+    "x": 0.9037,
+    "y": 0.2845,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Weakness"
+  },
+  {
+    "label": "Communication",
+    "x": 0.1898,
+    "y": 0.4262,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Communication"
+  },
+  {
+    "label": "Concepts",
+    "x": 0.3994,
+    "y": 0.4124,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Concepts"
+  },
+  {
+    "label": "Experiments",
+    "x": 0.5552,
+    "y": 0.4301,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Experiments"
+  },
+  {
+    "label": "Imagination",
+    "x": 0.711,
+    "y": 0.3967,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Imagination"
+  },
+  {
+    "label": "Introspection",
+    "x": 0.9037,
+    "y": 0.4006,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Introspection"
+  },
+  {
+    "label": "Knowledge",
+    "x": 0.2238,
+    "y": 0.5462,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Knowledge"
+  },
+  {
+    "label": "Language",
+    "x": 0.3938,
+    "y": 0.5325,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Language"
+  },
+  {
+    "label": "Memory",
+    "x": 0.5467,
+    "y": 0.5384,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Memory"
+  },
+  {
+    "label": "Rational Thought",
+    "x": 0.6997,
+    "y": 0.5167,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Rational Thought"
+  },
+  {
+    "label": "Strategy",
+    "x": 0.8952,
+    "y": 0.4951,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Strategy"
+  },
+  {
+    "label": "Altruism",
+    "x": 0.204,
+    "y": 0.6407,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Altruism"
+  },
+  {
+    "label": "Civility",
+    "x": 0.3881,
+    "y": 0.6427,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Civility"
+  },
+  {
+    "label": "Competition",
+    "x": 0.5411,
+    "y": 0.6269,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Competition"
+  },
+  {
+    "label": "Conflict",
+    "x": 0.7309,
+    "y": 0.6269,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Conflict"
+  },
+  {
+    "label": "Diplomacy",
+    "x": 0.9207,
+    "y": 0.6191,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Diplomacy"
+  },
+  {
+    "label": "Politics",
+    "x": 0.1983,
+    "y": 0.745,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Politics"
+  },
+  {
+    "label": "Relatedness",
+    "x": 0.3768,
+    "y": 0.7273,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Relatedness"
+  },
+  {
+    "label": "Society/Culture/Tradition",
+    "x": 0.5524,
+    "y": 0.7234,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Society/Culture/Tradition"
+  },
+  {
+    "label": "Social Comparison",
+    "x": 0.728,
+    "y": 0.7037,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Social Comparison"
+  },
+  {
+    "label": "Social Status",
+    "x": 0.898,
+    "y": 0.7214,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Social Status"
+  },
+  {
+    "label": "Control",
+    "x": 0.1926,
+    "y": 0.8336,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Control"
+  },
+  {
+    "label": "Discipline",
+    "x": 0.3314,
+    "y": 0.8375,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Discipline"
+  },
+  {
+    "label": "Play",
+    "x": 0.4363,
+    "y": 0.8355,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Play"
+  },
+  {
+    "label": "Productivity",
+    "x": 0.5609,
+    "y": 0.8257,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Productivity"
+  },
+  {
+    "label": "Risk Taking",
+    "x": 0.7054,
+    "y": 0.8218,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Risk Taking"
+  },
+  {
+    "label": "Technology",
+    "x": 0.83,
+    "y": 0.8119,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Technology"
+  },
+  {
+    "label": "Tactics",
+    "x": 0.9462,
+    "y": 0.8021,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Tactics"
+  },
+  {
+    "label": "Aesthetics",
+    "x": 0.2521,
+    "y": 0.9143,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Aesthetics"
+  },
+  {
+    "label": "Art",
+    "x": 0.4476,
+    "y": 0.9005,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Art"
+  },
+  {
+    "label": "Creativity",
+    "x": 0.8074,
+    "y": 0.8788,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Creativity"
+  },
+  {
+    "label": "Epic Meaning",
+    "x": 0.238,
+    "y": 0.9654,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Epic Meaning"
+  },
+  {
+    "label": "Freedom",
+    "x": 0.4051,
+    "y": 0.9635,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Freedom"
+  },
+  {
+    "label": "Morals",
+    "x": 0.5609,
+    "y": 0.9654,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Morals"
+  },
+  {
+    "label": "Philosophy & Spirituality",
+    "x": 0.7224,
+    "y": 0.9438,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Philosophy & Spirituality"
+  },
+  {
+    "label": "Transcendence",
+    "x": 0.9235,
+    "y": 0.9359,
+    "w": 0.1,
+    "h": 0.07,
+    "description": "Information about Transcendence"
+  }
+];
+
+const container = document.getElementById('container');
+
+hotspots.forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'hotspot';
+
+    el.style.left = (h.x * 100) + '%';
+    el.style.top = (h.y * 100) + '%';
+    el.style.width = (h.w * 100) + '%';
+    el.style.height = (h.h * 100) + '%';
+
+    el.addEventListener('click', () => {
+        document.getElementById('title').innerText = h.label;
+        document.getElementById('content').innerText = h.description;
+
+        document.getElementById('dialog').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    });
+
+    container.appendChild(el);
+});
+
+function closeDialog(){
+    document.getElementById('dialog').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
+
+document.getElementById('overlay').addEventListener('click', closeDialog);
+
+</script>
+
+</body>
+</html>
