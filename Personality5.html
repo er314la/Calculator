@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Human Traits — Interactive Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+–emotions: #c0392b;
+–identity: #1a3a5c;
+–mental: #2d6a4f;
+–social: #5c1a5c;
+–activity: #b5451b;
+–expression: #7d5a00;
+–spirit: #1a4a3a;
+}
+
+body {
+background: #111;
+font-family: ‘Lato’, sans-serif;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 20px;
+}
+
+h1 {
+font-family: ‘Playfair Display’, serif;
+color: #f0e6d0;
+font-size: clamp(1.4rem, 3vw, 2.2rem);
+letter-spacing: 0.12em;
+text-transform: uppercase;
+margin-bottom: 8px;
+text-align: center;
+}
+
+.subtitle {
+color: #9a8a7a;
+font-size: 0.85rem;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+margin-bottom: 24px;
+}
+
+.map-container {
+position: relative;
+display: inline-block;
+max-width: 800px;
+width: 100%;
+cursor: crosshair;
+}
+
+.map-container img {
+width: 100%;
+display: block;
+border-radius: 4px;
+box-shadow: 0 0 60px rgba(0,0,0,0.8);
+}
+
+/* Hotspot areas */
+.hotspot {
+position: absolute;
+border-radius: 6px;
+cursor: pointer;
+transition: background 0.2s, box-shadow 0.2s;
+background: rgba(255,255,255,0);
+}
+
+.hotspot:hover {
+background: rgba(255,255,255,0.18);
+box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+}
+
+/* ── MODAL ── */
+.overlay {
+display: none;
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.72);
+backdrop-filter: blur(6px);
+z-index: 1000;
+align-items: center;
+justify-content: center;
+}
+
+.overlay.active { display: flex; }
+
+.dialog {
+background: #1a1a1a;
+border: 1px solid rgba(255,255,255,0.12);
+border-radius: 12px;
+padding: 40px 44px;
+max-width: 480px;
+width: 90%;
+position: relative;
+animation: popIn 0.28s cubic-bezier(.22,1,.36,1);
+box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+
+@keyframes popIn {
+from { opacity: 0; transform: scale(0.88) translateY(16px); }
+to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.dialog-category {
+font-size: 0.68rem;
+letter-spacing: 0.22em;
+text-transform: uppercase;
+font-weight: 700;
+margin-bottom: 10px;
+opacity: 0.85;
+}
+
+.dialog-title {
+font-family: ‘Playfair Display’, serif;
+font-size: 2rem;
+color: #f5f0e8;
+margin-bottom: 16px;
+line-height: 1.1;
+}
+
+.dialog-divider {
+height: 2px;
+width: 48px;
+margin-bottom: 18px;
+border-radius: 2px;
+opacity: 0.8;
+}
+
+.dialog-desc {
+color: #c8bfb0;
+line-height: 1.72;
+font-size: 1.02rem;
+font-weight: 300;
+}
+
+.dialog-icon {
+font-size: 2.8rem;
+margin-bottom: 16px;
+display: block;
+}
+
+.close-btn {
+position: absolute;
+top: 16px; right: 18px;
+background: none;
+border: none;
+color: #888;
+font-size: 1.5rem;
+cursor: pointer;
+line-height: 1;
+transition: color 0.15s;
+}
+.close-btn:hover { color: #fff; }
+
+.debug-btn {
+position: fixed;
+bottom: 16px; right: 16px;
+background: #222;
+color: #888;
+border: 1px solid #444;
+border-radius: 6px;
+padding: 6px 14px;
+font-size: 0.75rem;
+letter-spacing: 0.1em;
+cursor: pointer;
+z-index: 900;
+font-family: ‘Lato’, sans-serif;
+}
+.debug-btn:hover { color: #fff; border-color: #888; }
+body.debug-mode .hotspot {
+background: rgba(255,100,0,0.28) !important;
+box-shadow: 0 0 0 1.5px rgba(255,160,0,0.9) !important;
+}
+body.debug-mode .hotspot::after {
+content: attr(data-key);
+position: absolute;
+top: 2px; left: 3px;
+font-size: 9px; color: #fff;
+font-family: monospace;
+pointer-events: none;
+white-space: nowrap;
+}
+</style>
+
+</head>
+<body>
+
+<h1>Human Traits</h1>
+<p class="subtitle">Click any concept to explore</p>
+
+<div class="map-container" id="mapContainer">
+  <img src="IMG_4883.jpeg" alt="Human Traits Infographic" id="infographic" usemap="#traitmap">
+
+  <!-- Hotspots are positioned as % of image width/height -->
+
+  <!-- EMOTIONS ROW -->
+
+  <div class="hotspot" style="left:14%;top:1.8%;width:16%;height:7%;" data-key="emotion"></div>
+  <div class="hotspot" style="left:31%;top:1.8%;width:16%;height:7%;" data-key="angst"></div>
+  <div class="hotspot" style="left:48%;top:1.8%;width:17%;height:7%;" data-key="empathy"></div>
+  <div class="hotspot" style="left:65.5%;top:1.8%;width:16%;height:7%;" data-key="fear"></div>
+  <div class="hotspot" style="left:82%;top:1.8%;width:16%;height:7%;" data-key="love"></div>
+
+  <!-- IDENTITY ROW 1 -->
+
+  <div class="hotspot" style="left:14%;top:10%;width:16%;height:7%;" data-key="failure"></div>
+  <div class="hotspot" style="left:31%;top:10%;width:16%;height:7%;" data-key="growth"></div>
+  <div class="hotspot" style="left:48%;top:10%;width:17%;height:7%;" data-key="instinct"></div>
+  <div class="hotspot" style="left:65.5%;top:10%;width:16%;height:7%;" data-key="intuition"></div>
+  <div class="hotspot" style="left:82%;top:10%;width:16%;height:7%;" data-key="need"></div>
+
+  <!-- IDENTITY ROW 2 -->
+
+  <div class="hotspot" style="left:14%;top:18.2%;width:16%;height:7%;" data-key="motivation"></div>
+  <div class="hotspot" style="left:31%;top:18.2%;width:16%;height:7%;" data-key="resilience"></div>
+  <div class="hotspot" style="left:48%;top:18.2%;width:17%;height:7%;" data-key="self"></div>
+  <div class="hotspot" style="left:65.5%;top:18.2%;width:16%;height:7%;" data-key="strengths"></div>
+  <div class="hotspot" style="left:82%;top:18.2%;width:16%;height:7%;" data-key="weakness"></div>
+
+  <!-- MENTAL ROW 1 -->
+
+  <div class="hotspot" style="left:14%;top:27.2%;width:16%;height:7%;" data-key="communication"></div>
+  <div class="hotspot" style="left:31%;top:27.2%;width:16%;height:7%;" data-key="concepts"></div>
+  <div class="hotspot" style="left:48%;top:27.2%;width:17%;height:7%;" data-key="experiments"></div>
+  <div class="hotspot" style="left:65.5%;top:27.2%;width:16%;height:7%;" data-key="imagination"></div>
+  <div class="hotspot" style="left:82%;top:27.2%;width:16%;height:7%;" data-key="introspection"></div>
+
+  <!-- MENTAL ROW 2 -->
+
+  <div class="hotspot" style="left:14%;top:35.5%;width:16%;height:7%;" data-key="knowledge"></div>
+  <div class="hotspot" style="left:31%;top:35.5%;width:16%;height:7%;" data-key="language"></div>
+  <div class="hotspot" style="left:48%;top:35.5%;width:17%;height:7%;" data-key="memory"></div>
+  <div class="hotspot" style="left:65.5%;top:35.5%;width:16%;height:7%;" data-key="rational"></div>
+  <div class="hotspot" style="left:82%;top:35.5%;width:16%;height:7%;" data-key="strategy"></div>
+
+  <!-- SOCIAL ROW 1 -->
+
+  <div class="hotspot" style="left:14%;top:44.8%;width:16%;height:7%;" data-key="altruism"></div>
+  <div class="hotspot" style="left:31%;top:44.8%;width:16%;height:7%;" data-key="civility"></div>
+  <div class="hotspot" style="left:48%;top:44.8%;width:17%;height:7%;" data-key="competition"></div>
+  <div class="hotspot" style="left:65.5%;top:44.8%;width:16%;height:7%;" data-key="conflict"></div>
+  <div class="hotspot" style="left:82%;top:44.8%;width:16%;height:7%;" data-key="diplomacy"></div>
+
+  <!-- SOCIAL ROW 2 -->
+
+  <div class="hotspot" style="left:14%;top:54%;width:16%;height:7%;" data-key="politics"></div>
+  <div class="hotspot" style="left:31%;top:54%;width:16%;height:7%;" data-key="relatedness"></div>
+  <div class="hotspot" style="left:48%;top:54%;width:17%;height:7%;" data-key="society"></div>
+  <div class="hotspot" style="left:65.5%;top:54%;width:16%;height:7%;" data-key="socialcomparison"></div>
+  <div class="hotspot" style="left:82%;top:54%;width:16%;height:7%;" data-key="socialstatus"></div>
+
+  <!-- ACTIVITY ROW -->
+
+  <!-- 7 items squeezed into right 86% of width (14%→100%). Each slot ≈12.3% wide -->
+
+  <div class="hotspot" style="left:14%;top:63.2%;width:12%;height:6%;" data-key="control"></div>
+  <div class="hotspot" style="left:26.5%;top:63.2%;width:12%;height:6%;" data-key="discipline"></div>
+  <div class="hotspot" style="left:39%;top:63.2%;width:12%;height:6%;" data-key="play"></div>
+  <div class="hotspot" style="left:51.5%;top:63.2%;width:12%;height:6%;" data-key="productivity"></div>
+  <div class="hotspot" style="left:64%;top:63.2%;width:12%;height:6%;" data-key="risktaking"></div>
+  <!-- Technology and Tactics: split last 24% equally, ending at 100% -->
+  <div class="hotspot" style="left:76.5%;top:63.2%;width:11%;height:6%;" data-key="technology"></div>
+  <div class="hotspot" style="left:88%;top:63.2%;width:11%;height:6%;" data-key="tactics"></div>
+
+  <!-- EXPRESSION ROW -->
+
+  <div class="hotspot" style="left:14%;top:71%;width:24%;height:6%;" data-key="aesthetics"></div>
+  <div class="hotspot" style="left:39%;top:71%;width:24%;height:6%;" data-key="art"></div>
+  <div class="hotspot" style="left:64%;top:71%;width:34%;height:6%;" data-key="creativity"></div>
+
+  <!-- SPIRIT ROW — sits at ~86-96% of image height -->
+
+  <div class="hotspot" style="left:14%;top:86%;width:17%;height:9%;" data-key="epicmeaning"></div>
+  <div class="hotspot" style="left:31%;top:86%;width:17%;height:9%;" data-key="freedom"></div>
+  <div class="hotspot" style="left:48%;top:86%;width:17%;height:9%;" data-key="morals"></div>
+  <div class="hotspot" style="left:65%;top:86%;width:17%;height:9%;" data-key="philosophy"></div>
+  <div class="hotspot" style="left:83%;top:86%;width:15%;height:9%;" data-key="transcendence"></div>
+</div>
+
+<!-- Modal -->
+
+<div class="overlay" id="overlay">
+  <div class="dialog" id="dialog">
+    <button class="close-btn" id="closeBtn">✕</button>
+    <span class="dialog-icon" id="dialogIcon"></span>
+    <div class="dialog-category" id="dialogCategory"></div>
+    <div class="dialog-title" id="dialogTitle"></div>
+    <div class="dialog-divider" id="dialogDivider"></div>
+    <div class="dialog-desc" id="dialogDesc"></div>
+  </div>
+</div>
+
+<button class="debug-btn" id="debugBtn">⬛ Debug hotspots</button>
+
+<script>
+const traits = {
+  // EMOTIONS
+  emotion:        { cat: "Emotions", icon: "🎭", color: "#c0392b", title: "Emotion", desc: "Mental states which color all thought for a period of time." },
+  angst:          { cat: "Emotions", icon: "⛈️", color: "#c0392b", title: "Angst", desc: "The fear that your life will be meaningless – which can be a type of motivation." },
+  empathy:        { cat: "Emotions", icon: "🤝", color: "#c0392b", title: "Empathy / Sympathy", desc: "The ability to share emotions & caring with & for others, & to react appropriately." },
+  fear:           { cat: "Emotions", icon: "⚠️", color: "#c0392b", title: "Fear", desc: "The dread of failure, uncertainty, risk & loss. A type or instinct or motivation." },
+  love:           { cat: "Emotions", icon: "❤️", color: "#c0392b", title: "Love", desc: "The ability to demonstrate unconditional loyalty, deep affection & benevolent concern for others." },
+
+  // IDENTITY
+  failure:        { cat: "Identity", icon: "🔗", color: "#1a3a5c", title: "Failure", desc: "Humans are not infallible, so will often make mistakes, misjudge or fail." },
+  growth:         { cat: "Identity", icon: "🌱", color: "#1a3a5c", title: "Growth", desc: "The drive to explore, improve & grow." },
+  instinct:       { cat: "Identity", icon: "🦁", color: "#1a3a5c", title: "Instinct", desc: "The ability override instinct with higher level though processes." },
+  intuition:      { cat: "Identity", icon: "💡", color: "#1a3a5c", title: "Intuition", desc: "Opinions & feelings formed by unconscious knowledge & hidden processes." },
+  need:           { cat: "Identity", icon: "💧", color: "#1a3a5c", title: "Need", desc: "Humans are born with physical & emotional needs that must be regularly satisfied to avoid pain & decline." },
+  motivation:     { cat: "Identity", icon: "🎯", color: "#1a3a5c", title: "Motivation", desc: "A wide variety of desires that drive us, as compared to animals – such as finding food & procreating." },
+  resilience:     { cat: "Identity", icon: "🏔️", color: "#1a3a5c", title: "Resilience", desc: "Humans can learn from failures, risk-taking & stressors – to become stronger." },
+  self:           { cat: "Identity", icon: "🪞", color: "#1a3a5c", title: "Self", desc: "The need to defend what we view as our self-interests, to have a sense of self-esteem & self-importance." },
+  strengths:      { cat: "Identity", icon: "💪", color: "#1a3a5c", title: "Strengths", desc: "Humans are highly capable & well adapted to life on Planet Earth." },
+  weakness:       { cat: "Identity", icon: "🧩", color: "#1a3a5c", title: "Weakness", desc: "Humans often lack abilities that would be advantageous to their life." },
+
+  // MENTAL
+  communication:  { cat: "Mental", icon: "💬", color: "#2d6a4f", title: "Communication", desc: "The desire to connect with others using various means of expression (language, art, music, stories…)." },
+  concepts:       { cat: "Mental", icon: "🕸️", color: "#2d6a4f", title: "Concepts", desc: "Thinking in ways that differ from reality – such as Language having many concepts without a direct physical equivalent." },
+  experiments:    { cat: "Mental", icon: "🧪", color: "#2d6a4f", title: "Experiments", desc: "Human curiosity & activity trying to discover new knowledge." },
+  imagination:    { cat: "Mental", icon: "☁️", color: "#2d6a4f", title: "Imagination", desc: "The ability to think in ways that differ from concrete reality." },
+  introspection:  { cat: "Mental", icon: "🧘", color: "#2d6a4f", title: "Introspection", desc: "The ability to examine our own character, thinking, actions & emotions – in order to self-improve." },
+  knowledge:      { cat: "Mental", icon: "📖", color: "#2d6a4f", title: "Knowledge", desc: "The ability to understand things, & share this information." },
+  language:       { cat: "Mental", icon: "💭", color: "#2d6a4f", title: "Language", desc: "The ability to share by communicating with words & complex thoughts." },
+  memory:         { cat: "Mental", icon: "🧠", color: "#2d6a4f", title: "Memory", desc: "The ability to remember information for a lifetime. They are often fuzzy & surrounded with emotions such as nostalgia." },
+  rational:       { cat: "Mental", icon: "⚖️", color: "#2d6a4f", title: "Rational Thought", desc: "The ability to consider evidence in a systematic way to form opinions." },
+  strategy:       { cat: "Mental", icon: "♞", color: "#2d6a4f", title: "Strategy", desc: "The ability to think out a series of action that will achieve a goal in the long term." },
+
+  // SOCIAL
+  altruism:       { cat: "Social", icon: "🤲", color: "#5c1a5c", title: "Altruism", desc: "An unselfish desire to make things better, even if it means personal sacrifice." },
+  civility:       { cat: "Social", icon: "🏛️", color: "#5c1a5c", title: "Civility", desc: "The ability to organize into communities societies & cultures, & to conform to a shared set of rules, in order to live peaceably." },
+  competition:    { cat: "Social", icon: "🏆", color: "#5c1a5c", title: "Competition", desc: "The ability to engage in social or business challenges, in games, sports & other pursuits." },
+  conflict:       { cat: "Social", icon: "⚔️", color: "#5c1a5c", title: "Conflict", desc: "Tendency for civility & diplomacy to break down between individuals or groups." },
+  diplomacy:      { cat: "Social", icon: "🤝", color: "#5c1a5c", title: "Diplomacy", desc: "The ability of groups / nations to use communication & understanding to resolve differences." },
+  politics:       { cat: "Social", icon: "🏛️", color: "#5c1a5c", title: "Politics", desc: "The process of a group cooperating to resolve power struggles & make decisions through communication." },
+  relatedness:    { cat: "Social", icon: "👥", color: "#5c1a5c", title: "Relatedness", desc: "A desire to connect & interact with other people." },
+  society:        { cat: "Social", icon: "🌐", color: "#5c1a5c", title: "Society, Culture, Tradition", desc: "Complex social behavior which develops shares systems, rules, celebrations & meaning." },
+  socialcomparison:{ cat: "Social", icon: "⚖️", color: "#5c1a5c", title: "Social Comparison", desc: "We constantly compare ourselves to close & distant others, present or past, good or bad people." },
+  socialstatus:   { cat: "Social", icon: "🥇", color: "#5c1a5c", title: "Social Status", desc: "The desire to be recognized & respected by others." },
+
+  // ACTIVITY
+  control:        { cat: "Activity", icon: "🚫", color: "#b5451b", title: "Control", desc: "Humans seek to exert influence &/or control over other people & their environment." },
+  discipline:     { cat: "Activity", icon: "📋", color: "#b5451b", title: "Discipline", desc: "The ability to transcend personal desire in order to do what's required in a particular situation." },
+  play:           { cat: "Activity", icon: "🪁", color: "#b5451b", title: "Play", desc: "The drive to find joy & fun in the world." },
+  productivity:   { cat: "Activity", icon: "⚙️", color: "#b5451b", title: "Productivity", desc: "The drive to create & produce tangible objects or mental results." },
+  risktaking:     { cat: "Activity", icon: "⚡", color: "#b5451b", title: "Risk Taking", desc: "The ability to act in an environment of uncertainty & risk in order to pursue opportunities." },
+  technology:     { cat: "Activity", icon: "🔧", color: "#b5451b", title: "Technology", desc: "The lack for making useful tools." },
+  tactics:        { cat: "Activity", icon: "🎯", color: "#b5451b", title: "Tactics", desc: "The ability to identify actions that could achieve a short term advantage." },
+
+  // EXPRESSION
+  aesthetics:     { cat: "Expression", icon: "👁️", color: "#7d5a00", title: "Aesthetics", desc: "The ability to feel that elements in the world are beautiful or otherwise appealing." },
+  art:            { cat: "Expression", icon: "🎵", color: "#7d5a00", title: "Art", desc: "The unconstrained pursuit of expression in a wide variety of forms." },
+  creativity:     { cat: "Expression", icon: "💡", color: "#7d5a00", title: "Creativity", desc: "The ability to produce things from imagination, such as designs or new concepts." },
+
+  // SPIRIT
+  epicmeaning:    { cat: "Spirit", icon: "🏔️", color: "#1a4a3a", title: "Epic Meaning", desc: "The desire for experiences that are deeply meaningful to the individual." },
+  freedom:        { cat: "Spirit", icon: "🕊️", color: "#1a4a3a", title: "Freedom", desc: "Humans also resent being controlled – strongly reacting to attempts at losing their freedom." },
+  morals:         { cat: "Spirit", icon: "⚖️", color: "#1a4a3a", title: "Morals", desc: "Commonly adopting principles of right & wrong used to evaluate / judge thoughts & actions." },
+  philosophy:     { cat: "Spirit", icon: "🌌", color: "#1a4a3a", title: "Philosophy & Spirituality", desc: "The ability to ponder fundamental questions concerning the nature of the universe, & the meaning of life." },
+  transcendence:  { cat: "Spirit", icon: "🌸", color: "#1a4a3a", title: "Transcendence", desc: "The ability to overcome parts of society or human nature that's inconsistent with your goals." },
+};
+
+const overlay   = document.getElementById('overlay');
+const closeBtn  = document.getElementById('closeBtn');
+const dialogIcon     = document.getElementById('dialogIcon');
+const dialogCategory = document.getElementById('dialogCategory');
+const dialogTitle    = document.getElementById('dialogTitle');
+const dialogDivider  = document.getElementById('dialogDivider');
+const dialogDesc     = document.getElementById('dialogDesc');
+
+document.querySelectorAll('.hotspot').forEach(el => {
+  el.addEventListener('click', () => {
+    const key = el.dataset.key;
+    const t = traits[key];
+    if (!t) return;
+    dialogIcon.textContent = t.icon;
+    dialogCategory.textContent = t.cat;
+    dialogCategory.style.color = t.color;
+    dialogTitle.textContent = t.title;
+    dialogDivider.style.background = t.color;
+    dialogDesc.textContent = t.desc;
+    overlay.classList.add('active');
+  });
+});
+
+closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('active'); });
+
+document.getElementById('debugBtn').addEventListener('click', () => {
+  document.body.classList.toggle('debug-mode');
+});
+</script>
+
+</body>
+</html>
