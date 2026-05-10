@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotspot Calibration</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: monospace; }
+  h2 { color: #fff; margin-bottom: 12px; font-size: 1rem; letter-spacing: 0.1em; }
+  p  { color: #aaa; font-size: 0.8rem; margin-bottom: 16px; text-align: center; max-width: 700px; }
+
+.map-container {
+position: relative;
+display: inline-block;
+max-width: 800px;
+width: 100%;
+}
+.map-container img {
+width: 100%;
+display: block;
+}
+
+.box {
+position: absolute;
+border: 2px solid;
+display: flex;
+align-items: flex-start;
+justify-content: flex-start;
+padding: 2px 4px;
+font-size: 10px;
+font-weight: bold;
+font-family: monospace;
+line-height: 1;
+cursor: default;
+}
+
+/* colour bands by section */
+.emotions  { border-color: #e74c3c; background: rgba(231,76,60,0.25);  color: #ff9999; }
+.identity  { border-color: #3498db; background: rgba(52,152,219,0.25); color: #99ccff; }
+.mental    { border-color: #2ecc71; background: rgba(46,204,113,0.25); color: #99ffcc; }
+.social    { border-color: #9b59b6; background: rgba(155,89,182,0.25); color: #cc99ff; }
+.activity  { border-color: #e67e22; background: rgba(230,126,34,0.25); color: #ffcc99; }
+.expression{ border-color: #f1c40f; background: rgba(241,196,15,0.25); color: #ffff99; }
+.spirit    { border-color: #1abc9c; background: rgba(26,188,156,0.25); color: #99ffee; }
+
+/* legend */
+.legend {
+margin-top: 20px;
+display: flex; flex-wrap: wrap; gap: 8px;
+max-width: 800px;
+justify-content: center;
+}
+.legend-item {
+font-family: monospace;
+font-size: 0.75rem;
+padding: 3px 8px;
+border-radius: 3px;
+border: 1px solid rgba(255,255,255,0.2);
+}
+</style>
+
+</head>
+<body>
+
+<h2>HOTSPOT CALIBRATION MAP</h2>
+<p>Each numbered box shows where a hotspot is currently placed. Screenshot this and send it back — mark any boxes that are misaligned and I'll correct them.</p>
+
+<div class="map-container">
+  <img src="IMG_4883.jpeg" alt="Infographic">
+
+  <!-- ── EMOTIONS (red) ── -->
+
+  <div class="box emotions" style="left:14%;top:1.8%;width:16%;height:7%;">1 Emotion</div>
+  <div class="box emotions" style="left:31%;top:1.8%;width:16%;height:7%;">2 Angst</div>
+  <div class="box emotions" style="left:48%;top:1.8%;width:17%;height:7%;">3 Empathy</div>
+  <div class="box emotions" style="left:65.5%;top:1.8%;width:16%;height:7%;">4 Fear</div>
+  <div class="box emotions" style="left:82%;top:1.8%;width:16%;height:7%;">5 Love</div>
+
+  <!-- ── IDENTITY ROW 1 (blue) ── -->
+
+  <div class="box identity" style="left:14%;top:10%;width:16%;height:7%;">6 Failure</div>
+  <div class="box identity" style="left:31%;top:10%;width:16%;height:7%;">7 Growth</div>
+  <div class="box identity" style="left:48%;top:10%;width:17%;height:7%;">8 Instinct</div>
+  <div class="box identity" style="left:65.5%;top:10%;width:16%;height:7%;">9 Intuition</div>
+  <div class="box identity" style="left:82%;top:10%;width:16%;height:7%;">10 Need</div>
+
+  <!-- ── IDENTITY ROW 2 (blue) ── -->
+
+  <div class="box identity" style="left:14%;top:18.2%;width:16%;height:7%;">11 Motivation</div>
+  <div class="box identity" style="left:31%;top:18.2%;width:16%;height:7%;">12 Resilience</div>
+  <div class="box identity" style="left:48%;top:18.2%;width:17%;height:7%;">13 Self</div>
+  <div class="box identity" style="left:65.5%;top:18.2%;width:16%;height:7%;">14 Strengths</div>
+  <div class="box identity" style="left:82%;top:18.2%;width:16%;height:7%;">15 Weakness</div>
+
+  <!-- ── MENTAL ROW 1 (green) ── -->
+
+  <div class="box mental" style="left:14%;top:27.2%;width:16%;height:7%;">16 Communication</div>
+  <div class="box mental" style="left:31%;top:27.2%;width:16%;height:7%;">17 Concepts</div>
+  <div class="box mental" style="left:48%;top:27.2%;width:17%;height:7%;">18 Experiments</div>
+  <div class="box mental" style="left:65.5%;top:27.2%;width:16%;height:7%;">19 Imagination</div>
+  <div class="box mental" style="left:82%;top:27.2%;width:16%;height:7%;">20 Introspection</div>
+
+  <!-- ── MENTAL ROW 2 (green) ── -->
+
+  <div class="box mental" style="left:14%;top:35.5%;width:16%;height:7%;">21 Knowledge</div>
+  <div class="box mental" style="left:31%;top:35.5%;width:16%;height:7%;">22 Language</div>
+  <div class="box mental" style="left:48%;top:35.5%;width:17%;height:7%;">23 Memory</div>
+  <div class="box mental" style="left:65.5%;top:35.5%;width:16%;height:7%;">24 Rational</div>
+  <div class="box mental" style="left:82%;top:35.5%;width:16%;height:7%;">25 Strategy</div>
+
+  <!-- ── SOCIAL ROW 1 (purple) ── -->
+
+  <div class="box social" style="left:14%;top:44.8%;width:16%;height:7%;">26 Altruism</div>
+  <div class="box social" style="left:31%;top:44.8%;width:16%;height:7%;">27 Civility</div>
+  <div class="box social" style="left:48%;top:44.8%;width:17%;height:7%;">28 Competition</div>
+  <div class="box social" style="left:65.5%;top:44.8%;width:16%;height:7%;">29 Conflict</div>
+  <div class="box social" style="left:82%;top:44.8%;width:16%;height:7%;">30 Diplomacy</div>
+
+  <!-- ── SOCIAL ROW 2 (purple) ── -->
+
+  <div class="box social" style="left:14%;top:54%;width:16%;height:7%;">31 Politics</div>
+  <div class="box social" style="left:31%;top:54%;width:16%;height:7%;">32 Relatedness</div>
+  <div class="box social" style="left:48%;top:54%;width:17%;height:7%;">33 Society</div>
+  <div class="box social" style="left:65.5%;top:54%;width:16%;height:7%;">34 SocialComp.</div>
+  <div class="box social" style="left:82%;top:54%;width:16%;height:7%;">35 SocialStatus</div>
+
+  <!-- ── ACTIVITY (orange) ── -->
+
+  <div class="box activity" style="left:14%;top:63.2%;width:12%;height:6%;">36 Control</div>
+  <div class="box activity" style="left:26.5%;top:63.2%;width:12%;height:6%;">37 Discipline</div>
+  <div class="box activity" style="left:39%;top:63.2%;width:12%;height:6%;">38 Play</div>
+  <div class="box activity" style="left:51.5%;top:63.2%;width:12%;height:6%;">39 Productivity</div>
+  <div class="box activity" style="left:64%;top:63.2%;width:12%;height:6%;">40 RiskTaking</div>
+  <div class="box activity" style="left:76.5%;top:63.2%;width:11%;height:6%;">41 Technology</div>
+  <div class="box activity" style="left:88%;top:63.2%;width:11%;height:6%;">42 Tactics</div>
+
+  <!-- ── EXPRESSION (yellow) ── -->
+
+  <div class="box expression" style="left:14%;top:71%;width:24%;height:6%;">43 Aesthetics</div>
+  <div class="box expression" style="left:39%;top:71%;width:24%;height:6%;">44 Art</div>
+  <div class="box expression" style="left:64%;top:71%;width:34%;height:6%;">45 Creativity</div>
+
+  <!-- ── SPIRIT (teal) ── -->
+
+  <div class="box spirit" style="left:14%;top:86%;width:17%;height:9%;">46 EpicMeaning</div>
+  <div class="box spirit" style="left:31%;top:86%;width:17%;height:9%;">47 Freedom</div>
+  <div class="box spirit" style="left:48%;top:86%;width:17%;height:9%;">48 Morals</div>
+  <div class="box spirit" style="left:65%;top:86%;width:17%;height:9%;">49 Philosophy</div>
+  <div class="box spirit" style="left:83%;top:86%;width:15%;height:9%;">50 Transcendence</div>
+</div>
+
+<div class="legend">
+  <span class="legend-item emotions">1–5 Emotions</span>
+  <span class="legend-item identity">6–15 Identity</span>
+  <span class="legend-item mental">16–25 Mental</span>
+  <span class="legend-item social">26–35 Social</span>
+  <span class="legend-item activity">36–42 Activity</span>
+  <span class="legend-item expression">43–45 Expression</span>
+  <span class="legend-item spirit">46–50 Spirit</span>
+</div>
+
+</body>
+</html>
