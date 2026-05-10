@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Human Concepts Map</title>
+<style>
+body {
+    margin: 0;
+    background: #111;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+#container {
+    position: relative;
+    width: 1024px;
+    max-width: 95vw;
+}
+#bg {
+    width: 100%;
+    display: block;
+    border-radius: 12px;
+}
+.hotspot {
+    position: absolute;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.hotspot:hover {
+    background: rgba(255,255,255,0.15);
+}
+#dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    width: min(500px, 90vw);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    display: none;
+    z-index: 1000;
+}
+#overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;
+    z-index: 999;
+}
+.close {
+    float: right;
+    cursor: pointer;
+    font-size: 24px;
+    font-weight: bold;
+}
+h2 {
+    margin-top: 0;
+}
+</style>
+</head>
+<body>
+
+<div id="container">
+    <img id="bg" src="IMG_4883.jpeg" alt="Concept Map">
+</div>
+
+<div id="overlay"></div>
+
+<div id="dialog">
+    <div class="close" onclick="hideDialog()">×</div>
+    <h2 id="title"></h2>
+    <p id="description"></p>
+</div>
+
+<script>
+const hotspots = [
+  {
+    "title": "Emotion",
+    "desc": "Mental states which color all thought for a period of time",
+    "x": 160,
+    "y": 20,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Angst",
+    "desc": "The fear that your life will be meaningless \u2014 which can be a type of motivation",
+    "x": 325,
+    "y": 20,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Empathy / Sympathy",
+    "desc": "The ability to share emotions and caring with & for others",
+    "x": 490,
+    "y": 20,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Fear",
+    "desc": "The dread of failure, uncertainty, risk & loss",
+    "x": 655,
+    "y": 20,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Love",
+    "desc": "The ability to demonstrate unconditional loyalty, deep affection & benevolence",
+    "x": 820,
+    "y": 20,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Failure",
+    "desc": "Humans are not infallible, so will often make mistakes or fail",
+    "x": 160,
+    "y": 145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Growth",
+    "desc": "The drive to explore, improve & grow",
+    "x": 325,
+    "y": 145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Instinct",
+    "desc": "The ability to override instinct with higher level thought processes",
+    "x": 490,
+    "y": 145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Intuition",
+    "desc": "Opinions & feelings formed by unconscious knowledge",
+    "x": 655,
+    "y": 145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Need",
+    "desc": "Humans are born with physical & emotional needs",
+    "x": 820,
+    "y": 145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Motivation",
+    "desc": "A wide variety of desires that drive us",
+    "x": 160,
+    "y": 270,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Resilience",
+    "desc": "Humans can learn from failures, risks & stressors",
+    "x": 325,
+    "y": 270,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Self",
+    "desc": "The need to defend what we view as our self-interests",
+    "x": 490,
+    "y": 270,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Strengths",
+    "desc": "Humans are highly capable & well adapted to life",
+    "x": 655,
+    "y": 270,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Weakness",
+    "desc": "Humans often lack abilities that would be advantageous",
+    "x": 820,
+    "y": 270,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Communication",
+    "desc": "The desire to connect with others",
+    "x": 160,
+    "y": 395,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Concepts",
+    "desc": "Thinking in ways that differ from reality",
+    "x": 325,
+    "y": 395,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Experiments",
+    "desc": "Human curiosity trying to discover new knowledge",
+    "x": 490,
+    "y": 395,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Imagination",
+    "desc": "The ability to think beyond concrete reality",
+    "x": 655,
+    "y": 395,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Introspection",
+    "desc": "The ability to examine our own character and emotions",
+    "x": 820,
+    "y": 395,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Knowledge",
+    "desc": "The ability to understand things and share information",
+    "x": 160,
+    "y": 520,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Language",
+    "desc": "Communicating with words and complex thoughts",
+    "x": 325,
+    "y": 520,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Memory",
+    "desc": "The ability to remember information",
+    "x": 490,
+    "y": 520,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Rational Thought",
+    "desc": "Considering evidence systematically",
+    "x": 655,
+    "y": 520,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Strategy",
+    "desc": "Thinking out a series of actions to achieve goals",
+    "x": 820,
+    "y": 520,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Altruism",
+    "desc": "An unselfish desire to make things better",
+    "x": 160,
+    "y": 645,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Civility",
+    "desc": "Organizing into communities and societies",
+    "x": 325,
+    "y": 645,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Competition",
+    "desc": "Engaging in social or business challenges",
+    "x": 490,
+    "y": 645,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Conflict",
+    "desc": "Breakdown between individuals or groups",
+    "x": 655,
+    "y": 645,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Diplomacy",
+    "desc": "Using communication to resolve differences",
+    "x": 820,
+    "y": 645,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Politics",
+    "desc": "The process of group cooperation",
+    "x": 160,
+    "y": 770,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Relatedness",
+    "desc": "A desire to connect & interact with others",
+    "x": 325,
+    "y": 770,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Society, Culture, Tradition",
+    "desc": "Complex social behavior creating shared systems",
+    "x": 490,
+    "y": 770,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Social Comparison",
+    "desc": "We compare ourselves to others",
+    "x": 655,
+    "y": 770,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Social Status",
+    "desc": "The desire to be recognized and respected",
+    "x": 820,
+    "y": 770,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Control",
+    "desc": "Seeking to exert influence or control",
+    "x": 160,
+    "y": 895,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Discipline",
+    "desc": "Doing what is required to achieve goals",
+    "x": 325,
+    "y": 895,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Play",
+    "desc": "The drive to find joy & fun",
+    "x": 490,
+    "y": 895,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Productivity",
+    "desc": "The drive to create and produce",
+    "x": 655,
+    "y": 895,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Risk Taking",
+    "desc": "Acting in uncertainty to pursue opportunities",
+    "x": 820,
+    "y": 895,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Technology",
+    "desc": "Making useful tools",
+    "x": 160,
+    "y": 1020,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Tactics",
+    "desc": "Short-term advantage actions",
+    "x": 325,
+    "y": 1020,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Aesthetics",
+    "desc": "The feeling that elements are beautiful",
+    "x": 490,
+    "y": 1020,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Art",
+    "desc": "The pursuit of expression in many forms",
+    "x": 655,
+    "y": 1020,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Creativity",
+    "desc": "Producing new things from imagination",
+    "x": 820,
+    "y": 1020,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Epic Meaning",
+    "desc": "Experiences deeply meaningful to the individual",
+    "x": 160,
+    "y": 1145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Freedom",
+    "desc": "Humans resent being controlled",
+    "x": 325,
+    "y": 1145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Morals",
+    "desc": "Adopting principles of right & wrong",
+    "x": 490,
+    "y": 1145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Philosophy & Spirituality",
+    "desc": "Questions concerning the meaning of life",
+    "x": 655,
+    "y": 1145,
+    "w": 145,
+    "h": 95
+  },
+  {
+    "title": "Transcendence",
+    "desc": "Going beyond ordinary human nature",
+    "x": 820,
+    "y": 1145,
+    "w": 145,
+    "h": 95
+  }
+];
+
+const container = document.getElementById('container');
+
+hotspots.forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'hotspot';
+    el.style.left = (h.x / 1024 * 100) + '%';
+    el.style.top = (h.y / 1474 * 100) + '%';
+    el.style.width = (h.w / 1024 * 100) + '%';
+    el.style.height = (h.h / 1474 * 100) + '%';
+
+    el.addEventListener('click', () => {
+        document.getElementById('title').innerText = h.title;
+        document.getElementById('description').innerText = h.desc;
+        document.getElementById('dialog').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    });
+
+    container.appendChild(el);
+});
+
+function hideDialog() {
+    document.getElementById('dialog').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
+
+document.getElementById('overlay').addEventListener('click', hideDialog);
+</script>
+
+</body>
+</html>
