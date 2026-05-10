@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Click Calibration Tool</title>
+
+<style>
+body {
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+#instructions {
+    max-width: 900px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+#container {
+    position: relative;
+    display: inline-block;
+}
+
+#image {
+    width: 100%;
+    max-width: 1024px;
+    border-radius: 12px;
+    display: block;
+}
+
+.marker {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: red;
+    border: 2px solid white;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+#output {
+    width: min(1000px, 95vw);
+    height: 260px;
+    margin-top: 20px;
+    background: #222;
+    color: #0f0;
+    border: 1px solid #444;
+    padding: 12px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    border-radius: 8px;
+}
+
+button {
+    margin-top: 12px;
+    padding: 10px 16px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.current {
+    color: #ffd54f;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Calibration Click Tool</h1>
+
+<div id="instructions">
+Click the center of each box in order starting with:
+<br><br>
+Emotion → Angst → Empathy/Sympathy → Fear → Love
+<br><br>
+Continue row by row until Transcendence.
+<br><br>
+Each click records the exact image-relative coordinates.
+<br><br>
+The coordinates will appear below. Copy and send them back once finished.
+<br><br>
+<div class="current">
+Current target: <span id="currentLabel"></span>
+</div>
+</div>
+
+<div id="container">
+    <img id="image" src="IMG_4883.jpeg">
+</div>
+
+<textarea id="output" readonly></textarea>
+<br>
+<button onclick="copyData()">Copy Coordinates</button>
+
+<script>
+
+const labels = [
+"Emotion","Angst","Empathy/Sympathy","Fear","Love",
+"Failure","Growth","Instinct","Intuition","Need",
+"Motivation","Resilience","Self","Strengths","Weakness",
+"Communication","Concepts","Experiments","Imagination","Introspection",
+"Knowledge","Language","Memory","Rational Thought","Strategy",
+"Altruism","Civility","Competition","Conflict","Diplomacy",
+"Politics","Relatedness","Society/Culture/Tradition","Social Comparison","Social Status",
+"Control","Discipline","Play","Productivity","Risk Taking","Technology","Tactics",
+"Aesthetics","Art","Creativity",
+"Epic Meaning","Freedom","Morals","Philosophy & Spirituality","Transcendence"
+];
+
+const image = document.getElementById('image');
+const container = document.getElementById('container');
+const output = document.getElementById('output');
+const currentLabel = document.getElementById('currentLabel');
+
+let index = 0;
+let results = [];
+
+currentLabel.innerText = labels[index];
+
+image.addEventListener('click', (e) => {
+
+    if(index >= labels.length) return;
+
+    const rect = image.getBoundingClientRect();
+
+    const x = ((e.clientX - rect.left) / rect.width).toFixed(4);
+    const y = ((e.clientY - rect.top) / rect.height).toFixed(4);
+
+    const label = labels[index];
+
+    results.push({
+        label,
+        x,
+        y
+    });
+
+    const marker = document.createElement('div');
+    marker.className = 'marker';
+    marker.style.left = (x * 100) + '%';
+    marker.style.top = (y * 100) + '%';
+    container.appendChild(marker);
+
+    output.value = JSON.stringify(results, null, 2);
+
+    index++;
+
+    if(index < labels.length){
+        currentLabel.innerText = labels[index];
+    } else {
+        currentLabel.innerText = "DONE";
+        alert("Calibration complete. Copy the coordinates and send them back.");
+    }
+
+});
+
+function copyData(){
+    output.select();
+    document.execCommand('copy');
+    alert('Coordinates copied.');
+}
+
+</script>
+
+</body>
+</html>
