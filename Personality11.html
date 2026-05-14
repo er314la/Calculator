@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Human Concepts</title>
+
+<style>
+  :root {
+    --bg-dark: #0f172a;
+    --glass-bg: rgba(15, 23, 42, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg-dark);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text-main);
+  }
+
+  #container {
+    position: relative;
+    width: min(1024px, 95vw);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+  }
+
+  #background {
+    width: 100%;
+    display: block;
+    filter: contrast(1.05) brightness(0.95); 
+  }
+
+  .hotspot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 0 0px rgba(255, 255, 255, 0);
+    z-index: 2;
+  }
+
+  .hotspot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+  }
+
+  .hotspot:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%) scale(1.05);
+    z-index: 10;
+  }
+
+  /* Overlay */
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 50;
+  }
+
+  #overlay.active {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Dialog / Modal */
+  #dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: min(560px, 90vw);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 0;
+    display: none;
+    z-index: 100;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+  }
+
+  #dialog.active {
+    display: block;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .dialog-header {
+    padding: 24px 24px 16px;
+    position: relative;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .dialog-color-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: var(--trait-color, #ccc);
+  }
+
+  .dialog-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .dialog-icon {
+    font-size: 32px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  }
+
+  .dialog-category {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.1);
+    color: var(--trait-color, #fff);
+    border: 1px solid var(--trait-color, #fff);
+  }
+
+  #dialog h2 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  .close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+    padding-bottom: 4px;
+  }
+
+  .close:hover {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    transform: rotate(90deg);
+  }
+
+  .dialog-body {
+    padding: 20px 24px 28px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  #content {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--text-main);
+  }
+
+  #content p {
+    margin-bottom: 1.2em;
+  }
+
+  #content p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .dialog-header { padding: 20px 20px 12px; }
+    .dialog-body { padding: 16px 20px 24px; }
+    #dialog h2 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+
+<body>
+
+<div id="container">
+    <img id="background" src="IMG_4883.jpeg" alt="Human Concepts Diagram">
+</div>
+
+<div id="overlay"></div>
+
+<div id="dialog">
+    <div class="dialog-header">
+        <div class="dialog-color-strip" id="colorStrip"></div>
+        <button class="close" onclick="closeDialog()" aria-label="Close dialog">×</button>
+        <div class="dialog-meta">
+            <div class="dialog-icon" id="modalIcon">🎭</div>
+            <div class="dialog-category" id="modalCategory">Category</div>
+        </div>
+        <h2 id="title">Title</h2>
+    </div>
+    <div class="dialog-body">
+        <div id="content"></div>
+    </div>
+</div>
+
+<script>
+  // ==================== RICH TRAITS DATA ====================
+  const traits = {
+    // EMOTIONS
+    emotion: {
+      cat: "Emotions",
+      icon: "🎭",
+      color: "#c0392b",
+      title: "Emotion",
+      desc: "Emotions are temporary mental and physiological states that influence perception, thinking, behavior, memory, and decision-making. They act like “filters” that color experience for minutes, hours, or even years. Emotions are not irrational by default — they evolved to help humans respond quickly to opportunities and threats. Fear increases vigilance, joy strengthens bonding, guilt encourages repair, and anger mobilizes energy against perceived injustice. Emotions often operate before conscious reasoning and can override logic when intense."
+    },
+    angst: {
+      cat: "Emotions",
+      icon: "⛈️",
+      color: "#c0392b",
+      title: "Angst",
+      desc: "Angst is a deep existential unease about meaning, purpose, mortality, isolation, or identity. Unlike ordinary anxiety, angst is often philosophical rather than situational. It emerges when people confront questions like: “Does my life matter?” or “Am I wasting my potential?” Although uncomfortable, angst can motivate growth, creativity, self-discovery, spiritual searching, or major life changes. Many philosophical traditions view angst as a necessary part of becoming fully conscious."
+    },
+    empathy: {
+      cat: "Emotions",
+      icon: "🤝",
+      color: "#c0392b",
+      title: "Empathy / Sympathy",
+      desc: "Empathy is the capacity to emotionally understand another person’s internal experience — to feel with them. Sympathy is caring about another person’s suffering while remaining emotionally separate from it. Empathy strengthens relationships, cooperation, parenting, leadership, and morality. Humans use facial expressions, tone, storytelling, and imagination to simulate others’ feelings internally. Excessive empathy without boundaries, however, can produce emotional exhaustion or manipulation vulnerability."
+    },
+    fear: {
+      cat: "Emotions",
+      icon: "⚠️",
+      color: "#c0392b",
+      title: "Fear",
+      desc: "Fear is an adaptive survival mechanism that prepares humans for danger, uncertainty, pain, or loss. It activates heightened awareness and defensive responses such as avoidance, freezing, fleeing, or fighting. Fear can be physical (injury, death) or psychological (rejection, embarrassment, failure). Healthy fear protects people from reckless behavior, while chronic or exaggerated fear can restrict growth and freedom. Courage is not the absence of fear but action despite it."
+    },
+    love: {
+      cat: "Emotions",
+      icon: "❤️",
+      color: "#c0392b",
+      title: "Love",
+      desc: "Love combines attachment, care, loyalty, affection, trust, sacrifice, and emotional investment. It exists in many forms: romantic love, parental love, friendship, compassion, devotion, and love of ideals or humanity. Love promotes bonding, cooperation, caregiving, and long-term social stability. Mature love usually includes commitment, understanding, forgiveness, and concern for another’s wellbeing beyond self-interest. Love can also become distorted through possessiveness, dependency, or idealization."
+    },
+
+    // IDENTITY
+    failure: {
+      cat: "Identity",
+      icon: "🔗",
+      color: "#1a3a5c",
+      title: "Failure",
+      desc: "Failure is the inevitable result of limitation, uncertainty, experimentation, and imperfect judgment. Humans constantly miscalculate, misunderstand, overlook information, or encounter uncontrollable circumstances. Failure is often emotionally painful because identity and self-worth become attached to outcomes. However, failure is also one of the primary mechanisms of learning, adaptation, innovation, and resilience. Most mastery develops through repeated mistakes and correction."
+    },
+    growth: {
+      cat: "Identity",
+      icon: "🌱",
+      color: "#1a3a5c",
+      title: "Growth",
+      desc: "Growth is the drive toward expansion of ability, understanding, maturity, competence, and self-development. Humans seek growth intellectually, emotionally, socially, spiritually, financially, and physically. Growth often requires discomfort because improvement demands confronting limitations. Stagnation can create frustration or meaninglessness, while growth creates momentum, hope, and increasing capability."
+    },
+    instinct: {
+      cat: "Identity",
+      icon: "🦁",
+      color: "#1a3a5c",
+      title: "Instinct",
+      desc: "Instinct refers to automatic biological drives and behavioral tendencies shaped by evolution. Hunger, fear responses, attraction, territoriality, social bonding, and status seeking all contain instinctive elements. Humans differ from many animals because they can reflect on instincts, suppress them, redirect them, or organize society around controlling them. Civilization depends heavily on regulating instinct through norms, ethics, and long-term planning."
+    },
+    intuition: {
+      cat: "Identity",
+      icon: "💡",
+      color: "#1a3a5c",
+      title: "Intuition",
+      desc: "Intuition is rapid unconscious pattern recognition based on accumulated experience, implicit memory, emotional cues, and hidden mental processing. It often feels immediate or automatic — a “gut feeling.” Skilled intuition can be remarkably accurate in familiar environments, especially for experts. However, intuition can also be distorted by biases, trauma, stereotypes, or incomplete information. Good judgment balances intuition with rational analysis."
+    },
+    need: {
+      cat: "Identity",
+      icon: "💧",
+      color: "#1a3a5c",
+      title: "Need",
+      desc: "Humans possess physical, emotional, psychological, and social needs that require recurring fulfillment. Physical needs include food, sleep, safety, movement, and health. Emotional and social needs include belonging, affection, recognition, autonomy, competence, and meaning. Persistent unmet needs create suffering, dysfunction, stress, or decline. Many human behaviors are indirect attempts to satisfy underlying needs."
+    },
+    motivation: {
+      cat: "Identity",
+      icon: "🎯",
+      color: "#1a3a5c",
+      title: "Motivation",
+      desc: "Motivation is the collection of internal drives that energize action. Humans are motivated not only by survival and reproduction, but also by achievement, curiosity, status, meaning, mastery, identity, purpose, creativity, morality, and belonging. Motivation can be intrinsic (internally rewarding) or extrinsic (reward/punishment driven). Human motivation is highly complex because different motives often compete simultaneously."
+    },
+    resilience: {
+      cat: "Identity",
+      icon: "🏔️",
+      color: "#1a3a5c",
+      title: "Resilience",
+      desc: "Resilience is the capacity to recover, adapt, and sometimes grow stronger through hardship, stress, uncertainty, or trauma. It involves emotional regulation, flexibility, meaning-making, learning, and persistence. Resilience is not invulnerability — resilient people still suffer — but they retain the ability to continue functioning and rebuilding. Social support, purpose, and adaptive thinking significantly strengthen resilience."
+    },
+    self: {
+      cat: "Identity",
+      icon: "🪞",
+      color: "#1a3a5c",
+      title: "Self",
+      desc: "The self is a constructed identity containing memories, beliefs, values, roles, goals, personality traits, and social perceptions. Humans defend the self psychologically because identity provides continuity, meaning, and stability. Threats to self-esteem, reputation, competence, or belonging can trigger powerful emotional reactions. The self is partly stable and partly fluid, changing across contexts and over time."
+    },
+    strengths: {
+      cat: "Identity",
+      icon: "💪",
+      color: "#1a3a5c",
+      title: "Strengths",
+      desc: "Human strengths include adaptability, creativity, cooperation, language, abstract reasoning, emotional complexity, tool use, imagination, and long-term planning. Humans compensate for physical limitations through intelligence, culture, and collective organization. Many strengths emerge socially rather than individually — civilizations amplify human capability."
+    },
+    weakness: {
+      cat: "Identity",
+      icon: "🧩",
+      color: "#1a3a5c",
+      title: "Weakness",
+      desc: "Humans are vulnerable to bias, error, emotional impulsiveness, fatigue, tribalism, self-deception, addiction, irrationality, and social influence. Biological limitations constrain perception, memory, attention, and objectivity. Human weakness is not merely failure of character — much of it results from evolutionary tradeoffs and cognitive constraints."
+    },
+
+    // MENTAL
+    communication: {
+      cat: "Mental",
+      icon: "💬",
+      color: "#2d6a4f",
+      title: "Communication",
+      desc: "Communication allows humans to exchange information, emotions, intentions, culture, identity, and meaning. It occurs through language, gesture, tone, music, symbolism, art, storytelling, and technology. Communication enables cooperation across enormous scales and allows knowledge to accumulate across generations."
+    },
+    concepts: {
+      cat: "Mental",
+      icon: "🕸️",
+      color: "#2d6a4f",
+      title: "Concepts",
+      desc: "Concepts are abstract mental categories humans use to organize reality. Many concepts — justice, freedom, mathematics, ownership, democracy, infinity — do not exist physically yet profoundly shape civilization. Concepts simplify complexity but can also distort reality when oversimplified or treated as absolute truths."
+    },
+    experiments: {
+      cat: "Mental",
+      icon: "🧪",
+      color: "#2d6a4f",
+      title: "Experiments",
+      desc: "Experimentation is humanity’s drive to test ideas against reality. Through observation, trial-and-error, science, and exploration, humans refine knowledge and reduce uncertainty. Experimentation requires curiosity, skepticism, and willingness to risk failure. Much technological and scientific progress depends on systematic experimentation."
+    },
+    imagination: {
+      cat: "Mental",
+      icon: "☁️",
+      color: "#2d6a4f",
+      title: "Imagination",
+      desc: "Imagination is the ability to mentally simulate possibilities beyond immediate reality. Humans imagine futures, inventions, stories, fears, alternatives, and hypothetical worlds. Imagination supports creativity, planning, empathy, innovation, and art. It can also generate anxiety, fantasy, delusion, or unrealistic expectations."
+    },
+    introspection: {
+      cat: "Mental",
+      icon: "🧘",
+      color: "#2d6a4f",
+      title: "Introspection",
+      desc: "Introspection is self-examination of thoughts, motives, beliefs, emotions, and behavior. It allows humans to identify patterns, improve character, regulate behavior, and pursue self-awareness. Excessive introspection, however, can become rumination or self-obsession if disconnected from action."
+    },
+    knowledge: {
+      cat: "Mental",
+      icon: "📖",
+      color: "#2d6a4f",
+      title: "Knowledge",
+      desc: "Knowledge is organized understanding gained through experience, education, observation, reflection, or experimentation. Human civilization depends on storing and transmitting knowledge across generations. Knowledge increases predictive power and capability but is always incomplete and evolving."
+    },
+    language: {
+      cat: "Mental",
+      icon: "💭",
+      color: "#2d6a4f",
+      title: "Language",
+      desc: "Language is a symbolic system for representing and transmitting ideas. It allows humans to communicate abstract thoughts, preserve history, coordinate societies, and construct culture. Language shapes perception itself because vocabulary influences how people categorize experience and interpret reality."
+    },
+    memory: {
+      cat: "Mental",
+      icon: "🧠",
+      color: "#2d6a4f",
+      title: "Memory",
+      desc: "Memory preserves experiences, skills, emotions, and identity over time. Human memory is reconstructive rather than perfectly accurate — memories change through emotion, interpretation, repetition, and storytelling. Memory creates continuity of self but is vulnerable to distortion and forgetting."
+    },
+    rational: {
+      cat: "Mental",
+      icon: "⚖️",
+      color: "#2d6a4f",
+      title: "Rational Thought",
+      desc: "Rational thought uses logic, evidence, consistency, and analysis to evaluate claims and make decisions. It enables science, engineering, mathematics, planning, and critical thinking. Rationality is powerful but limited because humans never possess complete information and are influenced by emotions and biases."
+    },
+    strategy: {
+      cat: "Mental",
+      icon: "♞",
+      color: "#2d6a4f",
+      title: "Strategy",
+      desc: "Strategy is long-term thinking aimed at achieving objectives under conditions of uncertainty and competition. Strategic thinking requires prioritization, prediction, tradeoffs, adaptation, and delayed gratification. Humans apply strategy in war, business, politics, relationships, and personal development."
+    },
+
+    // SOCIAL
+    altruism: {
+      cat: "Social",
+      icon: "🤲",
+      color: "#5c1a5c",
+      title: "Altruism",
+      desc: "Altruism is behavior intended to benefit others, sometimes at personal cost. It may arise from empathy, morality, kinship, reciprocity, reputation, or deeply held values. Human societies depend heavily on cooperative and altruistic behavior to function."
+    },
+    civility: {
+      cat: "Social",
+      icon: "🏛️",
+      color: "#5c1a5c",
+      title: "Civility",
+      desc: "Civility is the willingness to coexist peacefully through shared rules, norms, restraint, and mutual respect. It allows large groups of strangers to cooperate without constant conflict. Civility often requires suppressing immediate impulses for long-term social stability."
+    },
+    competition: {
+      cat: "Social",
+      icon: "🏆",
+      color: "#5c1a5c",
+      title: "Competition",
+      desc: "Competition occurs when individuals or groups pursue scarce resources, status, recognition, victory, or influence. Competition can drive innovation, excellence, discipline, and adaptation. However, excessive competition may create stress, hostility, inequality, or unethical behavior."
+    },
+    conflict: {
+      cat: "Social",
+      icon: "⚔️",
+      color: "#5c1a5c",
+      title: "Conflict",
+      desc: "Conflict emerges when goals, values, identities, interests, or resources collide. Conflict exists at personal, social, political, and international levels. While destructive conflict causes suffering, some conflict is necessary for change, justice, negotiation, and adaptation."
+    },
+    diplomacy: {
+      cat: "Social",
+      icon: "🤝",
+      color: "#5c1a5c",
+      title: "Diplomacy",
+      desc: "Diplomacy is the use of negotiation, communication, compromise, and mutual understanding to manage conflict without violence. It depends on emotional intelligence, strategic thinking, patience, and awareness of incentives and cultural differences."
+    },
+    politics: {
+      cat: "Social",
+      icon: "🏛️",
+      color: "#5c1a5c",
+      title: "Politics",
+      desc: "Politics is the process by which groups distribute power, resources, responsibilities, and decision-making authority. Politics exists wherever humans organize collectively — governments, workplaces, families, communities, and institutions. It reflects both cooperation and competition."
+    },
+    relatedness: {
+      cat: "Social",
+      icon: "👥",
+      color: "#5c1a5c",
+      title: "Relatedness",
+      desc: "Humans possess a strong need for connection, belonging, attachment, and recognition. Social isolation often causes emotional distress because humans evolved as deeply social creatures dependent on cooperation and community."
+    },
+    society: {
+      cat: "Social",
+      icon: "🌐",
+      color: "#5c1a5c",
+      title: "Society, Culture, Tradition",
+      desc: "Societies develop shared systems of meaning, behavior, rituals, institutions, stories, and norms across generations. Culture shapes identity, morality, language, expectations, and worldview. Traditions provide continuity and belonging but can also resist necessary change."
+    },
+    socialcomparison: {
+      cat: "Social",
+      icon: "⚖️",
+      color: "#5c1a5c",
+      title: "Social Comparison",
+      desc: "Humans constantly evaluate themselves relative to others in status, success, appearance, morality, intelligence, and achievement. Social comparison influences motivation, self-esteem, envy, pride, aspiration, and insecurity. Modern media dramatically amplifies comparison pressures."
+    },
+    socialstatus: {
+      cat: "Social",
+      icon: "🥇",
+      color: "#5c1a5c",
+      title: "Social Status",
+      desc: "Status reflects perceived importance, competence, prestige, influence, or respect within a group. Humans are highly sensitive to status because historically it affected survival, mating opportunities, and resource access. Status competition strongly shapes behavior, even unconsciously."
+    },
+
+    // ACTIVITY
+    control: {
+      cat: "Activity",
+      icon: "🚫",
+      color: "#b5451b",
+      title: "Control",
+      desc: "Humans seek influence over their environment, circumstances, and future because predictability increases safety and effectiveness. Loss of control often produces anxiety or helplessness. Excessive desire for control, however, can create rigidity or authoritarian behavior."
+    },
+    discipline: {
+      cat: "Activity",
+      icon: "📋",
+      color: "#b5451b",
+      title: "Discipline",
+      desc: "Discipline is the ability to act according to principles, goals, or responsibilities rather than immediate impulse. It enables long-term achievement, self-regulation, reliability, and mastery. Discipline often involves sacrificing short-term pleasure for future benefit."
+    },
+    play: {
+      cat: "Activity",
+      icon: "🪁",
+      color: "#b5451b",
+      title: "Play",
+      desc: "Play is exploratory, enjoyable activity pursued for stimulation, creativity, bonding, learning, or entertainment. Play helps children develop skills and adults reduce stress, strengthen relationships, and maintain creativity. Many forms of innovation emerge from playful experimentation."
+    },
+    productivity: {
+      cat: "Activity",
+      icon: "⚙️",
+      color: "#b5451b",
+      title: "Productivity",
+      desc: "Productivity is the drive to create value, solve problems, produce results, or accomplish goals. Humans often derive meaning and identity from productive contribution. Productivity can become unhealthy if self-worth becomes tied entirely to output."
+    },
+    risktaking: {
+      cat: "Activity",
+      icon: "⚡",
+      color: "#b5451b",
+      title: "Risk Taking",
+      desc: "Risk taking involves acting despite uncertainty in pursuit of opportunity, reward, growth, or survival. Innovation, exploration, entrepreneurship, and discovery all require risk. Poorly calibrated risk-taking can lead to recklessness, while excessive caution limits opportunity."
+    },
+    technology: {
+      cat: "Activity",
+      icon: "🔧",
+      color: "#b5451b",
+      title: "Technology",
+      desc: "Technology is the creation and use of tools to extend human capability. From language and fire to computers and AI, technology allows humans to reshape environments and overcome biological limitations. Technology amplifies both strengths and weaknesses."
+    },
+    tactics: {
+      cat: "Activity",
+      icon: "🎯",
+      color: "#b5451b",
+      title: "Tactics",
+      desc: "Tactics are short-term actions designed to gain immediate advantage within a broader strategy. Tactical thinking emphasizes timing, positioning, adaptation, efficiency, and situational awareness."
+    },
+
+    // EXPRESSION
+    aesthetics: {
+      cat: "Expression",
+      icon: "👁️",
+      color: "#7d5a00",
+      title: "Aesthetics",
+      desc: "Aesthetics concerns perceptions of beauty, harmony, elegance, style, and emotional resonance. Human aesthetic sensitivity influences art, architecture, fashion, music, design, and even mathematics. Beauty often combines order, novelty, symmetry, emotion, and meaning."
+    },
+    art: {
+      cat: "Expression",
+      icon: "🎵",
+      color: "#7d5a00",
+      title: "Art",
+      desc: "Art is expressive creation unconstrained solely by practical utility. It allows humans to externalize emotion, identity, imagination, criticism, spirituality, and experience through visual, musical, literary, physical, or digital forms. Art often communicates what ordinary language cannot."
+    },
+    creativity: {
+      cat: "Expression",
+      icon: "💡",
+      color: "#7d5a00",
+      title: "Creativity",
+      desc: "Creativity is the capacity to generate original, useful, surprising, or meaningful ideas and combinations. Creativity depends on imagination, experimentation, flexibility, curiosity, and willingness to deviate from convention. It fuels innovation across science, business, philosophy, and art."
+    },
+
+    // SPIRIT
+    epicmeaning: {
+      cat: "Spirit",
+      icon: "🏔️",
+      color: "#1a4a3a",
+      title: "Epic Meaning",
+      desc: "Humans seek experiences, purposes, and narratives that feel larger than themselves. Epic meaning may come from family, religion, nation, achievement, sacrifice, service, art, exploration, or legacy. Meaning helps people endure suffering and organize priorities."
+    },
+    freedom: {
+      cat: "Spirit",
+      icon: "🕊️",
+      color: "#1a4a3a",
+      title: "Freedom",
+      desc: "Freedom is the desire for autonomy, self-direction, and voluntary choice. Humans resist coercion because control over one’s life is psychologically central to dignity and identity. Freedom exists in tension with security, responsibility, and social order."
+    },
+    morals: {
+      cat: "Spirit",
+      icon: "⚖️",
+      color: "#1a4a3a",
+      title: "Morals",
+      desc: "Morals are systems of principles concerning right and wrong behavior. Moral systems help regulate cooperation, trust, justice, and social stability. Human morality is shaped by biology, culture, religion, philosophy, emotion, and reasoning."
+    },
+    philosophy: {
+      cat: "Spirit",
+      icon: "🌌",
+      color: "#1a4a3a",
+      title: "Philosophy & Spirituality",
+      desc: "Philosophy and spirituality involve questioning existence, consciousness, truth, morality, suffering, death, and meaning. Humans uniquely seek explanations that transcend immediate survival concerns. These pursuits often shape identity, ethics, and worldview."
+    },
+    transcendence: {
+      cat: "Spirit",
+      icon: "🌸",
+      color: "#1a4a3a",
+      title: "Transcendence",
+      desc: "Transcendence is the ability to rise above instinct, limitation, ego, conditioning, or circumstance in pursuit of higher goals or deeper understanding. It often involves self-mastery, sacrifice, wisdom, or spiritual transformation. Many traditions view transcendence as humanity’s highest potential."
+    }
+  };
+
+  // ==================== HOTSPOTS ====================
+  const hotspots = [
+    { id: "emotion", x: 0.2153, y: 0.0641, w: 0.1, h: 0.07 },
+    { id: "angst", x: 0.3796, y: 0.068, w: 0.1, h: 0.07 },
+    { id: "empathy", x: 0.5552, y: 0.068, w: 0.1, h: 0.07 },
+    { id: "fear", x: 0.7167, y: 0.0621, w: 0.1, h: 0.07 },
+    { id: "love", x: 0.9178, y: 0.0503, w: 0.1, h: 0.07 },
+    { id: "failure", x: 0.2068, y: 0.1979, w: 0.1, h: 0.07 },
+    { id: "growth", x: 0.3768, y: 0.1763, w: 0.1, h: 0.07 },
+    { id: "instinct", x: 0.5382, y: 0.1704, w: 0.1, h: 0.07 },
+    { id: "intuition", x: 0.7309, y: 0.1822, w: 0.1, h: 0.07 },
+    { id: "need", x: 0.9008, y: 0.1841, w: 0.1, h: 0.07 },
+    { id: "motivation", x: 0.2011, y: 0.3042, w: 0.1, h: 0.07 },
+    { id: "resilience", x: 0.3654, y: 0.2865, w: 0.1, h: 0.07 },
+    { id: "self", x: 0.5467, y: 0.2747, w: 0.1, h: 0.07 },
+    { id: "strengths", x: 0.7139, y: 0.2963, w: 0.1, h: 0.07 },
+    { id: "weakness", x: 0.9037, y: 0.2845, w: 0.1, h: 0.07 },
+    { id: "communication", x: 0.1898, y: 0.4262, w: 0.1, h: 0.07 },
+    { id: "concepts", x: 0.3994, y: 0.4124, w: 0.1, h: 0.07 },
+    { id: "experiments", x: 0.5552, y: 0.4301, w: 0.1, h: 0.07 },
+    { id: "imagination", x: 0.711, y: 0.3967, w: 0.1, h: 0.07 },
+    { id: "introspection", x: 0.9037, y: 0.4006, w: 0.1, h: 0.07 },
+    { id: "knowledge", x: 0.2238, y: 0.5462, w: 0.1, h: 0.07 },
+    { id: "language", x: 0.3938, y: 0.5325, w: 0.1, h: 0.07 },
+    { id: "memory", x: 0.5467, y: 0.5384, w: 0.1, h: 0.07 },
+    { id: "rational", x: 0.6997, y: 0.5167, w: 0.1, h: 0.07 },
+    { id: "strategy", x: 0.8952, y: 0.4951, w: 0.1, h: 0.07 },
+    { id: "altruism", x: 0.204, y: 0.6407, w: 0.1, h: 0.07 },
+    { id: "civility", x: 0.3881, y: 0.6427, w: 0.1, h: 0.07 },
+    { id: "competition", x: 0.5411, y: 0.6269, w: 0.1, h: 0.07 },
+    { id: "conflict", x: 0.7309, y: 0.6269, w: 0.1, h: 0.07 },
+    { id: "diplomacy", x: 0.9207, y: 0.6191, w: 0.1, h: 0.07 },
+    { id: "politics", x: 0.1983, y: 0.745, w: 0.1, h: 0.07 },
+    { id: "relatedness", x: 0.3768, y: 0.7273, w: 0.1, h: 0.07 },
+    { id: "society", x: 0.5524, y: 0.7234, w: 0.1, h: 0.07 },
+    { id: "socialcomparison", x: 0.728, y: 0.7037, w: 0.1, h: 0.07 },
+    { id: "socialstatus", x: 0.898, y: 0.7214, w: 0.1, h: 0.07 },
+    { id: "control", x: 0.1926, y: 0.8336, w: 0.1, h: 0.07 },
+    { id: "discipline", x: 0.3314, y: 0.8375, w: 0.1, h: 0.07 },
+    { id: "play", x: 0.4363, y: 0.8355, w: 0.1, h: 0.07 },
+    { id: "productivity", x: 0.5609, y: 0.8257, w: 0.1, h: 0.07 },
+    { id: "risktaking", x: 0.7054, y: 0.8218, w: 0.1, h: 0.07 },
+    { id: "technology", x: 0.83, y: 0.8119, w: 0.1, h: 0.07 },
+    { id: "tactics", x: 0.9462, y: 0.8021, w: 0.1, h: 0.07 },
+    { id: "aesthetics", x: 0.2521, y: 0.9143, w: 0.1, h: 0.07 },
+    { id: "art", x: 0.4476, y: 0.9005, w: 0.1, h: 0.07 },
+    { id: "creativity", x: 0.8074, y: 0.8788, w: 0.1, h: 0.07 },
+    { id: "epicmeaning", x: 0.238, y: 0.9654, w: 0.1, h: 0.07 },
+    { id: "freedom", x: 0.4051, y: 0.9635, w: 0.1, h: 0.07 },
+    { id: "morals", x: 0.5609, y: 0.9654, w: 0.1, h: 0.07 },
+    { id: "philosophy", x: 0.7224, y: 0.9438, w: 0.1, h: 0.07 },
+    { id: "transcendence", x: 0.9235, y: 0.9359, w: 0.1, h: 0.07 }
+  ];
+
+  const container = document.getElementById('container');
+
+  // Render Hotspots
+  hotspots.forEach(h => {
+    const traitData = traits[h.id];
+    if (!traitData) return;
+
+    const el = document.createElement('div');
+    el.className = 'hotspot';
+    
+    el.style.left = (h.x * 100) + '%';
+    el.style.top = (h.y * 100) + '%';
+    el.style.width = (h.w * 100) + '%';
+    el.style.height = (h.h * 100) + '%';
+    
+    el.title = traitData.title;
+
+    el.addEventListener('click', () => {
+      openDialog(traitData);
+    });
+
+    container.appendChild(el);
+  });
+
+  // Dialog Logic
+  const overlay = document.getElementById('overlay');
+  const dialog = document.getElementById('dialog');
+  const titleEl = document.getElementById('title');
+  const contentEl = document.getElementById('content');
+  const iconEl = document.getElementById('modalIcon');
+  const catEl = document.getElementById('modalCategory');
+  const colorStrip = document.getElementById('colorStrip');
+
+  function openDialog(data) {
+    titleEl.innerText = data.title;
+    contentEl.innerHTML = `<p>${data.desc}</p>`;
+    iconEl.innerText = data.icon;
+    catEl.innerText = data.cat;
+    
+    document.documentElement.style.setProperty('--trait-color', data.color);
+    colorStrip.style.backgroundColor = data.color;
+    catEl.style.color = data.color;
+    catEl.style.borderColor = data.color;
+
+    overlay.classList.add('active');
+    dialog.classList.add('active');
+  }
+
+  function closeDialog() {
+    overlay.classList.remove('active');
+    dialog.classList.remove('active');
+  }
+
+  overlay.addEventListener('click', closeDialog);
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dialog.classList.contains('active')) {
+      closeDialog();
+    }
+  });
+</script>
+
+</body>
+</html>
