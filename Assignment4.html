@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Game</title>
+    <style>
+        :root {
+            --w1-color: #00BFA5; 
+            --w2-color: #FF6D00; 
+            --w3-color: #E91E63; 
+            --w4-color: #2196F3; 
+            --bg-color: #ffffff;
+            --text-main: #333333;
+            --border-light: #e5e7eb;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --primary-color: #00BFA5;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: #f3f4f6;
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--bg-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 1050px;
+            padding: 35px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Top Header Utilities */
+        .header-actions {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            z-index: 5;
+        }
+        .gear-btn {
+            background: none;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .gear-btn:hover {
+            transform: rotate(45deg);
+        }
+
+        /* Screens management */
+        .screen { display: none; flex-direction: column; }
+        .active-screen { display: flex !important; }
+        #game-screen { flex-direction: row; gap: 40px; }
+
+        h1 { text-align: center; margin: 0 0 10px 0; font-size: 28px; }
+        h2 { text-align: center; margin-bottom: 20px; font-size: 22px; color: #1f2937; }
+
+        /* Setup / Config Styles */
+        .btn {
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn:hover { background-color: #e5e7eb; }
+        .btn-primary { background-color: var(--primary-color); color: white; border: none; }
+        .btn-primary:hover { background-color: #00a08a; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Configuration Layout */
+        .config-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 650px;
+            margin: 0 auto;
+            text-align: left;
+        }
+        .config-section {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+        .config-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #374151;
+        }
+        
+        /* Grid Mode Selector */
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .mode-btn {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .mode-btn:hover { border-color: #cbd5e1; }
+        .mode-btn.active {
+            border-color: var(--primary-color);
+            background: #f0fdf9;
+        }
+        .mode-icon { font-size: 22px; }
+        .mode-label { font-weight: 600; font-size: 14px; color: #1f2937; }
+        .mode-desc { font-size: 12px; color: #6b7280; }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toggle-info { max-width: 80%; }
+        .toggle-title { font-weight: 600; font-size: 14px; color: #1f2937; }
+        .toggle-description { font-size: 13px; color: #6b7280; margin-top: 2px; }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #d1d5db;
+            transition: .3s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Sliders */
+        .config-option {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .config-option label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .range-value { font-weight: 700; color: #111827; }
+        .range-container input {
+            width: 100%;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        /* Game Panel & Layout */
+        .panel { flex: 1; display: flex; flex-direction: column; }
+        .divider { width: 1px; background-color: var(--border-light); }
+
+        /* Interactive Matrix Tables */
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th { font-weight: 600; padding: 12px 8px; font-size: 14px; color: #4b5563; border-bottom: 2px solid #edf2f7; }
+        td { padding: 14px 8px; border-bottom: 1px solid #edf2f7; font-size: 18px; font-weight: bold; }
+        tr:last-child td { border-bottom: none; }
+
+        .worker-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            justify-content: flex-start;
+        }
+        .icon-circle {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 16px;
+        }
+
+        .masked-pill {
+            display: inline-block;
+            width: 45px; height: 16px;
+            background-color: #e5e7eb;
+            border-radius: 8px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; }
+        }
+
+        /* Custom Matrices Checkboxes */
+        .custom-checkbox {
+            appearance: none;
+            width: 26px; height: 26px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .custom-checkbox:checked {
+            border-color: var(--primary-color);
+            background-color: var(--primary-color);
+        }
+        .custom-checkbox:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 16px;
+            left: 5px; top: 0px;
+        }
+
+        /* Progress Timers */
+        .progress-container {
+            margin-top: auto;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            visibility: hidden;
+        }
+        .progress-track {
+            width: 90%; height: 16px;
+            background-color: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 100%;
+            background-color: #10b981;
+            transition: width 0.1s linear;
+        }
+        .timer-text { font-size: 14px; color: #4b5563; font-weight: 600; }
+
+        .submit-area {
+            margin-top: auto;
+            padding-top: 20px;
+            text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+        }
+        .validation-text { font-size: 13px; color: #6b7280; max-width: 280px; font-weight: 500; }
+
+        /* Modal Overlay */
+        #round-feedback {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background: white; padding: 35px; border-radius: 16px; width: 420px; text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .score-display { font-size: 26px; font-weight: bold; margin: 18px 0; color: var(--primary-color); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-actions" id="global-actions">
+            <button class="gear-btn" onclick="showConfigScreen()" title="Configure Game Settings">⚙️</button>
+        </div>
+
+        <div id="setup-screen" class="screen active-screen" style="text-align: center;">
+            <h1>Assignment Game</h1>
+            <p style="color: #4b5563; max-width: 500px; margin: 0 auto 25px auto;">
+                Act as a manager under uncertainty! Observe fluctuating structural worker outputs, track trends, and establish optimal matches.
+            </p>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 10px;">
+                <button class="btn btn-primary" onclick="startQuickGame(3)">Quick Start 3×3</button>
+                <button class="btn" style="background: white;" onclick="showConfigScreen()">Advanced Setup</button>
+            </div>
+        </div>
+
+        <div id="config-screen" class="screen">
+            <h1>Game Configuration</h1>
+            <p style="color: #6b7280; margin-bottom: 25px; text-align: center;">Customize your structural learning parameters</p>
+            
+            <div class="config-container">
+                <div class="config-section">
+                    <div class="config-title">📐 Game Mode</div>
+                    <div class="mode-selector">
+                        <div class="mode-btn active" onclick="selectMode('3', this)" id="mode-3">
+                            <span class="mode-icon">3️⃣</span>
+                            <span class="mode-label">3×3 Grid</span>
+                            <span class="mode-desc">3 Workers, 3 Tasks</span>
+                        </div>
+                        <div class="mode-btn" onclick="selectMode('4', this)" id="mode-4">
+                            <span class="mode-icon">4️⃣</span>
+                            <span class="mode-label">4×4 Grid</span>
+                            <span class="mode-desc">4 Workers, 4 Tasks</span>
+                        </div>
+                        <div class="mode-btn" onclick="selectMode('mixed', this)" id="mode-mixed">
+                            <span class="mode-icon">🔀</span>
+                            <span class="mode-label">Mixed Mode</span>
+                            <span class="mode-desc">Alternates 3×3 & 4×4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="config-title">👁️ Observation Order</div>
+                    <div class="toggle-container">
+                        <div class="toggle-info">
+                            <div class="toggle-title">Worker-First Sequencing</div>
+                            <div class="toggle-description">
+                                Isolates single workers through all 5 sequential days before presenting the next profile.
+                            </div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="observation-toggle" onchange="toggleObservationMode()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div id="mode-indicator" style="margin-top: 12px; padding: 10px; background: #f0fdf9; border-radius: 6px; font-size: 13px; color: var(--primary-color); font-weight: 500;">
+                        Current: Day-First Mode (All workers shown day-by-day)
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="config-title">📈 Stochasticity Tuning</div>
+                    <div class="config-option">
+                        <label>Noise Level (Gaussian Standard Deviation &sigma;): <span class="range-value" id="noise-value">1.0</span></label>
+                        <div class="range-container">
+                            <input type="range" id="noise-slider" min="0.0" max="3.0" step="0.2" value="1.0" oninput="updateNoiseValue(this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="config-title">⏱️ Step Exposure Budget</div>
+                    <div class="config-option">
+                        <label>Observation Window Per Item: <span class="range-value" id="timer-value">1.5s</span></label>
+                        <div class="range-container">
+                            <input type="range" id="timer-slider" min="0.5" max="4.0" step="0.5" value="1.5" oninput="updateTimerValue(this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <div class="config-title">🔄 Total Matching Rounds</div>
+                    <div class="config-option">
+                        <label>Rounds to Play: <span class="range-value" id="rounds-value">3</span></label>
+                        <div class="range-container">
+                            <input type="range" id="rounds-slider" min="1" max="10" value="3" oninput="updateRoundsValue(this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
+                <button class="btn" onclick="showSetup()" style="padding: 12px 30px;">Back</button>
+                <button class="btn btn-primary" onclick="startConfiguredGame()" style="padding: 12px 40px; font-size: 18px;">Start Game</button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div class="panel">
+                <h2 id="observation-title">Observation: Day 1</h2>
+                <table id="observation-table"></table>
+                <div class="progress-container" id="timer-container">
+                    <div class="progress-track"><div class="progress-fill" id="progress-bar"></div></div>
+                    <div class="timer-text" id="timer-text">10 seconds remaining</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="panel">
+                <h2>Assignment Mapping</h2>
+                <table id="assignment-table"></table>
+                <div class="submit-area">
+                    <div class="validation-text" id="validation-msg">Awaiting structural discovery pipeline to complete processing entries.</div>
+                    <button class="btn" id="submit-btn" disabled onclick="submitRound()">Submit Assignment</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="summary-screen" class="screen" style="text-align: center;">
+            <h1>Session Analysis Complete</h1>
+            <h2>Total Aggregated Yield: <span id="final-score">0</span></h2>
+            <p id="efficiency-score" style="font-size: 18px; font-weight: 500; color: #4b5563; margin-bottom: 30px;"></p>
+            <div>
+                <button class="btn btn-primary" onclick="location.reload()">Return to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="round-feedback">
+        <div class="modal-content">
+            <h2>Performance Optimization Summary</h2>
+            <div class="score-display">Your Mapping Output: <span id="round-score"></span></div>
+            <p style="color: #4b5563; font-weight: 500; font-size: 15px;">Mathematical Maximum (Optimal Profile): <span id="optimal-score" style="color:#111827; font-weight:700;"></span></p>
+            <button class="btn btn-primary" style="margin-top: 15px; width: 100%;" onclick="nextRound()">Advance to Next Round</button>
+        </div>
+    </div>
+
+<script>
+    /* --- CONFIGURATION PRESETS & STATE ARCHITECTURE --- */
+    let gameConfig = {
+        mode: '3', 
+        observationOrder: 'day-first', 
+        noiseSigma: 1.0,
+        timePerObsMs: 1500,     
+        timePerReviewMs: 2000,  
+        submissionTimeMs: 10000,
+        totalRounds: 3
+    };
+
+    const WORKERS = [
+        { id: 1, icon: '🐶', color: '#00BFA5' }, 
+        { id: 2, icon: '🐱', color: '#FF6D00' }, 
+        { id: 3, icon: '🐭', color: '#E91E63' }, 
+        { id: 4, icon: '🐻', color: '#2196F3' }  
+    ];
+    const TASKS = ['Task A', 'Task B', 'Task C', 'Task D'];
+
+    let gameState = {
+        gridSize: 3,
+        currentRound: 1,
+        phase: 'setup', 
+        trueMatrix: [],
+        dailyData: [],  
+        assignments: {}, 
+        totalScore: 0,
+        totalOptimal: 0,
+        timerInterval: null,
+        sequenceSchedule: [], // Flattened execution track array
+        scheduleIndex: 0
+    };
+
+    /* --- DISPLAY LAYER ROUTING ENGINE --- */
+    function showSetup() {
+        switchActiveScreen('setup-screen');
+        document.getElementById('global-actions').style.display = 'block';
+    }
+
+    function showConfigScreen() {
+        switchActiveScreen('config-screen');
+        document.getElementById('global-actions').style.display = 'none';
+    }
+
+    function switchActiveScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+        document.getElementById(screenId).classList.add('active-screen');
+    }
+
+    /* --- SETTINGS SCREEN CONTROLS INPUTS --- */
+    function selectMode(modeVal, targetBtn) {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        targetBtn.classList.add('active');
+        gameConfig.mode = modeVal;
+    }
+
+    function toggleObservationMode() {
+        const toggle = document.getElementById('observation-toggle');
+        const indicator = document.getElementById('mode-indicator');
+        if (toggle.checked) {
+            gameConfig.observationOrder = 'worker-first';
+            indicator.innerText = "Current: Worker-First Mode (Isolate single profiles across all days)";
+        } else {
+            gameConfig.observationOrder = 'day-first';
+            indicator.innerText = "Current: Day-First Mode (All workers shown day-by-day)";
+        }
+    }
+
+    function updateNoiseValue(val) {
+        document.getElementById('noise-value').innerText = parseFloat(val).toFixed(1);
+        gameConfig.noiseSigma = parseFloat(val);
+    }
+
+    function updateTimerValue(val) {
+        document.getElementById('timer-value').innerText = parseFloat(val).toFixed(1) + 's';
+        gameConfig.timePerObsMs = parseFloat(val) * 1000;
+    }
+
+    function updateRoundsValue(val) {
+        document.getElementById('rounds-value').innerText = val;
+        gameConfig.totalRounds = parseInt(val);
+    }
+
+    /* --- GAME LOOP PROCESSING PIPELINE --- */
+    function startQuickGame(size) {
+        gameConfig.mode = size.toString();
+        gameConfig.observationOrder = 'day-first';
+        gameConfig.noiseSigma = 1.0;
+        gameConfig.timePerObsMs = 1500;
+        gameConfig.totalRounds = 3;
+        startConfiguredGame();
+    }
+
+    function startConfiguredGame() {
+        document.getElementById('global-actions').style.display = 'none';
+        gameState.currentRound = 1;
+        gameState.totalScore = 0;
+        gameState.totalOptimal = 0;
+        switchActiveScreen('game-screen');
+        startRound();
+    }
+
+    function startRound() {
+        gameState.assignments = {};
+        gameState.scheduleIndex = 0;
+        gameState.sequenceSchedule = [];
+        
+        // Grid determination processing (Mixed vs Explicit Static Bounds)
+        if (gameConfig.mode === 'mixed') {
+            gameState.gridSize = Math.random() < 0.5 ? 3 : 4;
+        } else {
+            gameState.gridSize = parseInt(gameConfig.mode);
+        }
+
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('validation-msg').innerText = "Observation phase processing... Structural configuration inputs locked.";
+        document.getElementById('timer-container').style.visibility = 'hidden';
+
+        // Generate Underlying Mean True Matrix structural vectors
+        gameState.trueMatrix = [];
+        for (let i = 0; i < gameState.gridSize; i++) {
+            let row = [];
+            for (let j = 0; j < gameState.gridSize; j++) {
+                row.push(Math.floor(Math.random() * 8) + 2); // Structural baseline integer parameters [2-9]
+            }
+            gameState.trueMatrix.push(row);
+        }
+
+        // Simulate 5 Observation matrices embedded via Box-Muller transformations
+        gameState.dailyData = [];
+        for(let d = 0; d < 5; d++) {
+            gameState.dailyData.push(generateGaussianNoisyMatrix(gameState.trueMatrix, gameConfig.noiseSigma));
+        }
+
+        buildExecutionSchedule();
+        buildInteractiveTables();
+        executeNextScheduledStep();
+    }
+
+    /* --- GAUSSIAN BOX-MULLER MATHEMATICAL TRANSFORMS --- */
+    function generateGaussianNoisyMatrix(baseMatrix, sigma) {
+        return baseMatrix.map(row => row.map(val => {
+            if (sigma === 0) return val;
+            let u1 = 0, u2 = 0;
+            while(u1 === 0) u1 = Math.random(); 
+            while(u2 === 0) u2 = Math.random();
+            let normRand = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            let rawValue = val + (normRand * sigma);
+            return Math.max(1, Math.min(10, Math.round(rawValue))); // Bounds clamping matrix integers within 1-10 limits
+        }));
+    }
+
+    /* --- SCHEDULING DISCOVERY DRIVER --- */
+    function buildExecutionSchedule() {
+        // Phase 1: Sequential Discrete Data Extraction Blocks
+        if (gameConfig.observationOrder === 'worker-first') {
+            for(let i = 0; i < gameState.gridSize; i++) {
+                for(let d = 0; d < 5; d++) {
+                    gameState.sequenceSchedule.push({ phase: 'observation', day: d, worker: i, label: `Profile Track: Worker ${i+1} (Day ${d+1})`, duration: gameConfig.timePerObsMs });
+                }
+            }
+        } else { // day-first configuration
+            for(let d = 0; d < 5; d++) {
+                for(let i = 0; i < gameState.gridSize; i++) {
+                    gameState.sequenceSchedule.push({ phase: 'observation', day: d, worker: i, label: `Profile Track: Day ${d+1} (Worker ${i+1})`, duration: gameConfig.timePerObsMs });
+                }
+            }
+        }
+
+        // Phase 2: Simultaneous Configuration Multi-Profile Historical Calibration Data Reviews
+        for(let d = 0; d < 5; d++) {
+            gameState.sequenceSchedule.push({ phase: 'review', day: d, worker: null, label: `Review Sequence: Day ${d+1} Synthesis`, duration: gameConfig.timePerReviewMs });
+        }
+
+        // Phase 3: Final Optimization Selection Allocation Lock Screen
+        gameState.sequenceSchedule.push({ phase: 'submission', day: -1, worker: -1, label: "Final Assignment Phase", duration: gameConfig.submissionTimeMs });
+    }
+
+    function executeNextScheduledStep() {
+        if (gameState.scheduleIndex >= gameState.sequenceSchedule.length) return;
+
+        let step = gameState.sequenceSchedule[gameState.scheduleIndex];
+        gameState.phase = step.phase;
+        document.getElementById('observation-title').innerText = step.label;
+
+        if (step.phase === 'observation') {
+            renderMatrixView(step.day, step.worker);
+            gameState.scheduleIndex++;
+            setTimeout(executeNextScheduledStep, step.duration);
+        } else if (step.phase === 'review') {
+            renderMatrixView(step.day, null);
+            gameState.scheduleIndex++;
+            setTimeout(executeNextScheduledStep, step.duration);
+        } else if (step.phase === 'submission') {
+            renderMatrixView(-1, -1); // Completely mask empirical datasets
+            document.getElementById('validation-msg').innerText = "Enforcing system selection sequence... System mapping will auto-submit when timeline expires.";
+            document.getElementById('timer-container').style.visibility = 'visible';
+            verifyMatchingValidationState();
+            
+            startCountdownTimer(step.duration, () => {
+                if (Object.keys(gameState.assignments).length === gameState.gridSize) {
+                    submitRound();
+                } else {
+                    autoPenalizeFillAllocation();
+                }
+            });
+        }
+    }
+
+    /* --- GRAPHICAL MATRIX COMPONENT BUILDERS --- */
+    function buildInteractiveTables() {
+        const obsTable = document.getElementById('observation-table');
+        const assTable = document.getElementById('assignment-table');
+        
+        let headerHtml = '<tr><th></th>';
+        for(let j=0; j<gameState.gridSize; j++) headerHtml += `<th>${TASKS[j]}</th>`;
+        headerHtml += '</tr>';
+        
+        obsTable.innerHTML = headerHtml;
+        assTable.innerHTML = headerHtml;
+
+        for(let i=0; i<gameState.gridSize; i++) {
+            let w = WORKERS[i];
+            let labelHtml = `
+                <td style="width: 130px;">
+                    <div class="worker-label" style="color: ${w.color}">
+                        <div class="icon-circle" style="background-color: ${w.color}">${w.icon}</div>
+                        Worker ${w.id}
+                    </div>
+                </td>`;
+            
+            let obsRow = document.createElement('tr');
+            obsRow.innerHTML = labelHtml;
+            for(let j=0; j<gameState.gridSize; j++) {
+                let td = document.createElement('td');
+                td.id = `obs-${i}-${j}`;
+                obsRow.appendChild(td);
+            }
+            obsTable.appendChild(obsRow);
+
+            let assRow = document.createElement('tr');
+            assRow.innerHTML = labelHtml;
+            for(let j=0; j<gameState.gridSize; j++) {
+                let td = document.createElement('td');
+                let cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'custom-checkbox';
+                cb.id = `ass-${i}-${j}`;
+                cb.onclick = () => processMatrixSelectionConstraint(i, j);
+                td.appendChild(cb);
+                assRow.appendChild(td);
+            }
+            assTable.appendChild(assRow);
+        }
+    }
+
+    function renderMatrixView(dayIndex, workerIndex) {
+        let matrix = dayIndex >= 0 ? gameState.dailyData[dayIndex] : null;
+
+        for(let i=0; i<gameState.gridSize; i++) {
+            for(let j=0; j<gameState.gridSize; j++) {
+                let cell = document.getElementById(`obs-${i}-${j}`);
+                if (matrix && (workerIndex === null || workerIndex === i)) {
+                    cell.innerText = matrix[i][j];
+                    cell.style.color = 'var(--text-main)';
+                } else {
+                    cell.innerHTML = '<span class="masked-pill"></span>';
+                }
+            }
+        }
+    }
+
+    /* --- CONSTRAINED ALLOCATION ALGORITHMS --- */
+    function processMatrixSelectionConstraint(workerIdx, taskIdx) {
+        let cb = document.getElementById(`ass-${workerIdx}-${taskIdx}`);
+        let stateChecked = cb.checked;
+
+        if (stateChecked) {
+            // Uncheck row elements
+            for(let j=0; j<gameState.gridSize; j++) {
+                if (j !== taskIdx) document.getElementById(`ass-${workerIdx}-${j}`).checked = false;
+            }
+            // Uncheck column vectors
+            for(let i=0; i<gameState.gridSize; i++) {
+                if (i !== workerIdx) document.getElementById(`ass-${i}-${taskIdx}`).checked = false;
+            }
+            gameState.assignments[workerIdx] = taskIdx;
+        } else {
+            delete gameState.assignments[workerIdx];
+        }
+
+        // Scrub index parameters for validation checking
+        for(let i=0; i<gameState.gridSize; i++) {
+            let activeRowSelection = false;
+            for(let j=0; j<gameState.gridSize; j++) {
+                if (document.getElementById(`ass-${i}-${j}`).checked) activeRowSelection = true;
+            }
+            if (!activeRowSelection) delete gameState.assignments[i];
+        }
+        verifyMatchingValidationState();
+    }
+
+    function verifyMatchingValidationState() {
+        let btn = document.getElementById('submit-btn');
+        let completeMappingsValid = Object.keys(gameState.assignments).length === gameState.gridSize;
+        let isLockdownPhase = gameState.phase === 'submission';
+        
+        if (completeMappingsValid && isLockdownPhase) {
+            btn.disabled = false;
+            btn.classList.add('btn-primary');
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('btn-primary');
+        }
+    }
+
+    function autoPenalizeFillAllocation() {
+        // Auto-fill configuration loops through available vectors when timer constraints exhaust
+        let availableTasks = Array.from({length: gameState.gridSize}, (_, i) => i);
+        
+        // Remove mapped targets
+        for(let w in gameState.assignments) {
+            let t = gameState.assignments[w];
+            availableTasks = availableTasks.filter(x => x !== t);
+        }
+
+        // Fill remaining spaces
+        for(let i=0; i<gameState.gridSize; i++) {
+            if (gameState.assignments[i] === undefined && availableTasks.length > 0) {
+                gameState.assignments[i] = availableTasks.shift();
+            }
+        }
+        submitRound();
+    }
+
+    /* --- COUNTDOWN EXPOSURE GRAPHICS TIMER --- */
+    function startCountdownTimer(duration, callback) {
+        clearInterval(gameState.timerInterval);
+        let startTimestamp = Date.now();
+        let bar = document.getElementById('progress-bar');
+        let labelText = document.getElementById('timer-text');
+
+        gameState.timerInterval = setInterval(() => {
+            let elapsed = Date.now() - startTimestamp;
+            let timelineRemaining = duration - elapsed;
+            
+            if (timelineRemaining <= 0) {
+                clearInterval(gameState.timerInterval);
+                bar.style.width = "0%";
+                labelText.innerText = "0 seconds remaining";
+                callback();
+            } else {
+                let scalingPercent = (timelineRemaining / duration) * 100;
+                bar.style.width = scalingPercent + "%";
+                labelText.innerText = Math.ceil(timelineRemaining / 1000) + " seconds remaining";
+            }
+        }, 50);
+    }
+
+    /* --- PERFORMANCE SCORING MATCH CALCULATIONS --- */
+    function submitRound() {
+        clearInterval(gameState.timerInterval);
+        
+        let roundScore = 0;
+        for (const [wStr, t] of Object.entries(gameState.assignments)) {
+            let wIdx = parseInt(wStr);
+            roundScore += gameState.trueMatrix[wIdx][t];
+        }
+
+        let mathematicallyOptimal = calculateGlobalOptimalMatch(gameState.trueMatrix);
+        
+        gameState.totalScore += roundScore;
+        gameState.totalOptimal += mathematicallyOptimal;
+
+        document.getElementById('round-score').innerText = roundScore;
+        document.getElementById('optimal-score').innerText = mathematicallyOptimal;
+        document.getElementById('round-feedback').style.display = 'flex';
+    }
+
+    function nextRound() {
+        document.getElementById('round-feedback').style.display = 'none';
+        if (gameState.currentRound < gameConfig.totalRounds) {
+            gameState.currentRound++;
+            startRound();
+        } else {
+            terminateGameInstance();
+        }
+    }
+
+    function terminateGameInstance() {
+        switchActiveScreen('summary-screen');
+        document.getElementById('final-score').innerText = gameState.totalScore;
+        let efficiencyMetric = ((gameState.totalScore / gameState.totalOptimal) * 100).toFixed(1);
+        document.getElementById('efficiency-score').innerText = `Matching Optimization Quality Level: ${efficiencyMetric}% of maximum possible yield.`;
+    }
+
+    /* --- COMBINATORIAL OPTIMIZATION MATRICES SOLUTIONS --- */
+    function calculateGlobalOptimalMatch(matrix) {
+        let size = matrix.length;
+        let dimensions = Array.from({length: size}, (_, i) => i);
+        let absoluteMax = -Infinity;
+
+        function computePermutations(arr, accum = []) {
+            if (arr.length === 0) {
+                let evaluatedSum = 0;
+                for(let i=0; i<size; i++) {
+                    evaluatedSum += matrix[i][accum[i]];
+                }
+                if (evaluatedSum > absoluteMax) absoluteMax = evaluatedSum;
+            } else {
+                for (let i = 0; i < arr.length; i++) {
+                    let snapshot = arr.slice();
+                    let currentElement = snapshot.splice(i, 1);
+                    computePermutations(snapshot, accum.concat(currentElement));
+                }
+            }
+        }
+        computePermutations(dimensions);
+        return absoluteMax;
+    }
+</script>
+
+</body>
+</html>
