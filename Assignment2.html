@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assignment Game</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --white: #ffffff;
+  --bg: #f7f8fc;
+  --panel: #ffffff;
+  --border: #e8eaf0;
+  --border-light: #f0f2f8;
+  --text-primary: #1a1d2e;
+  --text-secondary: #6b7080;
+  --text-light: #a0a8bc;
+  --accent: #4f6ef7;
+  --accent-light: #eef0fe;
+  --green: #22c55e;
+  --green-light: #dcfce7;
+  --orange: #f97316;
+  --red: #ef4444;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+  --r: 12px; --r-sm: 8px; --r-xs: 6px;
+  --font: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --w1: #06b6d4; --w1b: #cffafe;
+  --w2: #f97316; --w2b: #ffedd5;
+  --w3: #ec4899; --w3b: #fce7f3;
+  --w4: #22c55e; --w4b: #dcfce7;
+  --w5: #ef4444; --w5b: #fee2e2;
+  --w6: #8b5cf6; --w6b: #ede9fe;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text-primary); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── CONFIG ── */
+#screen-config { min-height:100vh; display:none; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; }
+#screen-config.active { display:flex; }
+.config-card { background:var(--white); border-radius:20px; box-shadow:var(--shadow-lg); padding:48px; width:100%; max-width:540px; }
+.config-logo { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
+.config-logo-icon { width:44px; height:44px; background:var(--accent); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.config-logo-text { font-size:22px; font-weight:700; }
+.config-logo-text span { color:var(--accent); }
+.cfg-section { margin-bottom:24px; }
+.cfg-section-title { font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--text-light); margin-bottom:12px; }
+.mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mode-option { border:2px solid var(--border); border-radius:var(--r); padding:18px; cursor:pointer; transition:all .15s; text-align:center; }
+.mode-option:hover { border-color:var(--accent); background:var(--accent-light); }
+.mode-option.active { border-color:var(--accent); background:var(--accent-light); }
+.mo-n { font-size:30px; font-weight:700; color:var(--accent); display:block; line-height:1; margin-bottom:4px; }
+.mo-l { font-size:12px; color:var(--text-secondary); font-weight:500; }
+.cfg-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.cfg-field { display:flex; flex-direction:column; gap:6px; }
+.cfg-field label { font-size:12px; font-weight:600; color:var(--text-secondary); }
+.cfg-field input, .cfg-field select { padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--r-sm); font-family:var(--font); font-size:14px; color:var(--text-primary); background:var(--white); outline:none; transition:border-color .15s; }
+.cfg-field input:focus, .cfg-field select:focus { border-color:var(--accent); }
+.btn-start { width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:var(--r); font-family:var(--font); font-size:16px; font-weight:600; cursor:pointer; transition:all .15s; margin-top:8px; }
+.btn-start:hover { background:#3d5be8; transform:translateY(-1px); box-shadow:0 4px 16px rgba(79,110,247,.35); }
+
+/* ── TOPBAR ── */
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:0 32px; height:60px; display:flex; align-items:center; gap:20px; position:sticky; top:0; z-index:100; box-shadow:var(--shadow-sm); }
+.topbar-logo { font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.tl-dot { width:8px; height:8px; background:var(--accent); border-radius:50%; }
+.topbar-sep { width:1px; height:20px; background:var(--border); }
+.tp { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:100px; font-size:12px; font-weight:600; white-space:nowrap; }
+.tp-round { background:#f0f2ff; color:var(--accent); }
+.tp-score { background:var(--green-light); color:#16a34a; }
+.tp-phase { margin-left:auto; }
+.tp-obs { background:#e0f2fe; color:#0284c7; }
+.tp-review { background:#faf5ff; color:#7c3aed; }
+.tp-assign { background:#fff7ed; color:var(--orange); }
+.tp-countdown { background:#fff7ed; color:var(--orange); }
+.tp-locked { background:#fef2f2; color:var(--red); }
+
+/* ── GAME SCREEN ── */
+#screen-game { min-height:100vh; display:none; flex-direction:column; }
+#screen-game.active { display:flex; }
+.game-body { flex:1; display:grid; grid-template-columns:1fr 1px 1fr; min-height:calc(100vh - 60px); }
+.panel-div { background:var(--border); }
+.left-panel, .right-panel { padding:32px 36px; overflow-y:auto; background:var(--white); }
+
+/* ── PANEL HEADING ── */
+.panel-heading { font-size:26px; font-weight:700; margin-bottom:28px; display:flex; align-items:baseline; gap:10px; }
+.ph-sub { font-size:16px; font-weight:500; color:var(--text-secondary); }
+
+/* ── OBS TABLE ── */
+.obs-table { width:100%; border-collapse:separate; border-spacing:0; }
+.obs-table thead th { padding:10px 16px; text-align:center; font-size:14px; font-weight:600; color:var(--text-secondary); border-bottom:2px solid var(--border); }
+.obs-table thead th:first-child { text-align:left; width:180px; }
+.obs-table tbody td { padding:16px 16px; text-align:center; vertical-align:middle; border-bottom:1px solid var(--border-light); }
+.obs-table tbody td:first-child { text-align:left; }
+.obs-table tbody tr:last-child td { border-bottom:none; }
+.worker-cell { display:flex; align-items:center; gap:12px; }
+.worker-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.worker-name { font-size:15px; font-weight:600; }
+.obs-val { font-family:var(--font-mono); font-size:22px; font-weight:500; animation:popIn .3s cubic-bezier(.34,1.56,.64,1); }
+@keyframes popIn { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
+.obs-blank { height:10px; width:76px; background:#e8eaf0; border-radius:5px; display:inline-block; animation:shimmer 1.6s ease-in-out infinite; }
+@keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+/* ── TIMER BAR ── */
+.timer-section { margin-top:28px; }
+.timer-bar-track { width:100%; max-width:340px; height:10px; background:var(--border); border-radius:5px; overflow:hidden; margin-bottom:8px; }
+.timer-bar-fill { height:100%; border-radius:5px; background:linear-gradient(90deg,var(--green),#86efac); transition:width .5s linear; }
+.timer-bar-fill.urgent { background:linear-gradient(90deg,var(--red),#fca5a5); }
+.timer-lbl { font-size:14px; color:var(--text-secondary); font-weight:500; }
+
+/* ── ASSIGN TABLE ── */
+.right-panel { background:#f9fafc; }
+.assign-wrap { border:1.5px solid var(--border); border-radius:var(--r); overflow:hidden; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+.assign-table { width:100%; border-collapse:separate; border-spacing:0; background:var(--white); }
+.assign-table thead th { padding:10px 16px; text-align:center; font-size:14px; font-weight:600; color:var(--text-secondary); border-bottom:2px solid var(--border); background:var(--white); }
+.assign-table thead th:first-child { text-align:left; }
+.assign-table tbody td { padding:14px 16px; text-align:center; vertical-align:middle; border-bottom:1px solid var(--border-light); background:var(--white); }
+.assign-table tbody td:first-child { text-align:left; }
+.assign-table tbody tr:last-child td { border-bottom:none; }
+.chk { width:28px; height:28px; border:2px solid var(--border); border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:all .15s; background:var(--white); font-size:0; user-select:none; }
+.chk:hover:not(.chk-dis):not(.chk-locked) { border-color:var(--accent); background:var(--accent-light); }
+.chk.chk-on { background:var(--accent); border-color:var(--accent); font-size:14px; color:white; }
+.chk.chk-on::after { content:'✓'; font-weight:700; font-size:14px; }
+.chk.chk-dis { opacity:.25; cursor:default; }
+.chk.chk-locked { cursor:default; }
+
+/* ── SUBMIT SECTION ── */
+.submit-section { text-align:center; }
+.submit-note { font-size:13px; color:var(--text-light); margin-bottom:14px; line-height:1.5; }
+.btn-submit { padding:13px 44px; background:var(--accent); color:white; border:none; border-radius:var(--r-sm); font-family:var(--font); font-size:15px; font-weight:600; cursor:pointer; transition:all .15s; }
+.btn-submit:hover:not(:disabled) { background:#3d5be8; transform:translateY(-1px); box-shadow:0 4px 16px rgba(79,110,247,.3); }
+.btn-submit:disabled { background:#e0e2ea; color:var(--text-light); cursor:default; transform:none; box-shadow:none; }
+.locked-banner { background:#fef2f2; border:1.5px solid #fecaca; border-radius:var(--r-sm); padding:12px 18px; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; color:var(--red); margin-bottom:16px; }
+.cd-bar-track { width:100%; max-width:360px; height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin:0 auto 8px; }
+.cd-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--orange),#fdba74); transition:width 1s linear; }
+.cd-bar-fill.urgent { background:linear-gradient(90deg,var(--red),#fca5a5); }
+
+/* ── FEEDBACK ── */
+#screen-feedback { min-height:100vh; padding:48px 24px; display:none; flex-direction:column; align-items:center; background:var(--bg); }
+#screen-feedback.active { display:flex; }
+.fb-card { background:var(--white); border-radius:20px; box-shadow:var(--shadow-lg); padding:40px; width:100%; max-width:640px; margin-bottom:0; }
+.fb-tag { font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text-light); margin-bottom:8px; }
+.fb-title { font-size:30px; font-weight:700; margin-bottom:4px; }
+.fb-big { font-size:72px; font-weight:700; color:var(--accent); line-height:1; margin:16px 0 4px; font-family:var(--font-mono); }
+.fb-eff { font-size:15px; color:var(--text-secondary); margin-bottom:24px; }
+.fb-eff strong { font-size:17px; }
+.fb-cmp { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; }
+.fb-cbox { padding:14px 18px; border-radius:var(--r-sm); text-align:center; }
+.fb-cbox .cbl { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+.fb-cbox .cbv { font-size:22px; font-weight:700; font-family:var(--font-mono); }
+.cbox-best { background:var(--green-light); } .cbox-best .cbl { color:#16a34a; } .cbox-best .cbv { color:#15803d; }
+.cbox-worst { background:#fef2f2; } .cbox-worst .cbl { color:var(--red); } .cbox-worst .cbv { color:#dc2626; }
+.fb-bk { display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
+.fb-row { display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:var(--r-sm); border:1.5px solid var(--border); }
+.fb-row.optimal { border-color:#86efac; background:#f0fdf4; }
+.fb-wn { font-size:15px; font-weight:600; }
+.fb-ar { color:var(--text-light); font-size:13px; }
+.fb-tn { flex:1; font-size:15px; font-weight:500; color:var(--text-secondary); }
+.fb-v { font-family:var(--font-mono); font-size:18px; font-weight:600; color:var(--accent); }
+.opt-tag { font-size:11px; padding:3px 8px; border-radius:100px; font-weight:600; background:var(--green-light); color:#16a34a; }
+.fb-acts { display:flex; gap:12px; justify-content:flex-end; }
+.btn-next { padding:13px 28px; background:var(--accent); color:white; border:none; border-radius:var(--r-sm); font-family:var(--font); font-size:15px; font-weight:600; cursor:pointer; transition:all .15s; }
+.btn-next:hover { background:#3d5be8; }
+.btn-ghost { padding:13px 24px; background:transparent; color:var(--text-secondary); border:1.5px solid var(--border); border-radius:var(--r-sm); font-family:var(--font); font-size:15px; font-weight:500; cursor:pointer; transition:all .15s; }
+.btn-ghost:hover { border-color:var(--text-secondary); color:var(--text-primary); }
+
+/* ── SUMMARY ── */
+#screen-summary { min-height:100vh; padding:48px 24px; display:none; flex-direction:column; align-items:center; background:var(--bg); }
+#screen-summary.active { display:flex; }
+.sum-hero { background:var(--white); border-radius:20px; box-shadow:var(--shadow-lg); padding:48px 40px; width:100%; max-width:680px; text-align:center; margin-bottom:20px; position:relative; overflow:hidden; }
+.sum-hero::before { content:''; position:absolute; top:-80px; left:50%; transform:translateX(-50%); width:500px; height:500px; background:radial-gradient(ellipse,rgba(79,110,247,.05) 0%,transparent 70%); }
+.sum-tag { font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text-light); margin-bottom:8px; }
+.sum-title { font-size:34px; font-weight:700; margin-bottom:4px; }
+.sum-total { font-size:88px; font-weight:700; color:var(--accent); font-family:var(--font-mono); line-height:1; margin:16px 0 8px; }
+.sum-avg { font-size:16px; color:var(--text-secondary); }
+.sum-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; width:100%; max-width:680px; margin-bottom:20px; }
+.stat-c { background:var(--white); border-radius:var(--r); padding:20px; text-align:center; box-shadow:var(--shadow-sm); }
+.stat-c .sl { font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text-light); margin-bottom:6px; }
+.stat-c .sv { font-size:26px; font-weight:700; font-family:var(--font-mono); }
+.sc-g { color:var(--green); } .sc-b { color:var(--accent); } .sc-r { color:var(--red); }
+.hist-card { background:var(--white); border-radius:20px; box-shadow:var(--shadow-sm); padding:28px 32px; width:100%; max-width:680px; margin-bottom:20px; }
+.hist-title { font-size:13px; font-weight:700; color:var(--text-light); letter-spacing:1px; text-transform:uppercase; margin-bottom:16px; }
+.hist-row { display:grid; grid-template-columns:32px 1fr 64px 56px; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid var(--border-light); }
+.hist-row:last-child { border-bottom:none; }
+.hn { font-size:13px; color:var(--text-light); font-weight:600; text-align:center; }
+.hbw { height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
+.hb { height:100%; border-radius:4px; }
+.hs { font-size:15px; font-weight:700; font-family:var(--font-mono); text-align:right; }
+.he { font-size:12px; color:var(--text-light); text-align:right; }
+.sum-acts { display:flex; gap:12px; width:100%; max-width:680px; }
+.sum-acts .btn-next { flex:1; }
+
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.aup { animation:slideUp .4s cubic-bezier(.22,1,.36,1) both; }
+
+@media(max-width:768px) {
+  .game-body { grid-template-columns:1fr; grid-template-rows:auto 1px auto; }
+  .panel-div { height:1px; width:100%; }
+  .sum-stats { grid-template-columns:1fr 1fr; }
+  .topbar { padding:0 16px; gap:12px; overflow-x:auto; }
+  .left-panel, .right-panel { padding:20px; }
+  .config-card { padding:24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- CONFIG -->
+<div id="screen-config" class="screen active">
+  <div class="config-card aup">
+    <div class="config-logo">
+      <div class="config-logo-icon">📋</div>
+      <div class="config-logo-text">Assignment <span>Game</span></div>
+    </div>
+    <div class="cfg-section">
+      <div class="cfg-section-title">Grid Size</div>
+      <div class="mode-grid">
+        <div class="mode-option active" onclick="selMode(3,this)" data-n="3"><span class="mo-n">3×3</span><span class="mo-l">Standard</span></div>
+        <div class="mode-option" onclick="selMode(4,this)" data-n="4"><span class="mo-n">4×4</span><span class="mo-l">Extended</span></div>
+      </div>
+    </div>
+    <div class="cfg-section">
+      <div class="cfg-section-title">Session Settings</div>
+      <div class="cfg-grid">
+        <div class="cfg-field"><label>Number of Rounds</label><input type="number" id="cfg-rounds" value="8" min="3" max="20"></div>
+        <div class="cfg-field"><label>Obs. Duration (sec)</label><input type="number" id="cfg-obs" value="3" min="1" max="10"></div>
+        <div class="cfg-field"><label>Review Duration (sec)</label><input type="number" id="cfg-review" value="15" min="5" max="60"></div>
+        <div class="cfg-field"><label>Decision Time (sec)</label><input type="number" id="cfg-decision" value="15" min="5" max="60"></div>
+        <div class="cfg-field"><label>Samples per Cell</label><input type="number" id="cfg-samples" value="3" min="1" max="6"></div>
+        <div class="cfg-field"><label>Noise Level</label>
+          <select id="cfg-noise">
+            <option value="2">Low (±2)</option>
+            <option value="4" selected>Medium (±4)</option>
+            <option value="8">High (±8)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startGame()">▶ &nbsp;Start Session</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo"><div class="tl-dot"></div>Assignment Game</div>
+    <div class="topbar-sep"></div>
+    <div class="tp tp-round" id="tb-round">Round 1</div>
+    <div class="tp tp-score" id="tb-score">Score: 0</div>
+    <div class="tp tp-phase tp-obs" id="tb-phase">Observation</div>
+  </div>
+  <div class="game-body">
+    <div class="left-panel" id="lp"></div>
+    <div class="panel-div"></div>
+    <div class="right-panel" id="rp"></div>
+  </div>
+</div>
+
+<!-- FEEDBACK -->
+<div id="screen-feedback" class="screen"></div>
+
+<!-- SUMMARY -->
+<div id="screen-summary" class="screen"></div>
+
+<script>
+// ── WORKER THEMES ──
+const WIC=['🐕','🐈','🐦','🐟','🦎','🐇'];
+const WCL=['#06b6d4','#f97316','#ec4899','#22c55e','#ef4444','#8b5cf6'];
+const WBG=['#cffafe','#ffedd5','#fce7f3','#dcfce7','#fee2e2','#ede9fe'];
+
+// ── STATE ──
+let cfg={};
+let G={
+  round:0, totalScore:0, history:[],
+  assignment:{}, phase:'config',
+  P:[], S:[], best:0, bestPerm:[], worst:0, worstPerm:[],
+  obsSeq:[], obsStep:0,
+  obsTimer:null, cdTimer:null,
+  cdLeft:0, cdTotal:0,
+};
+
+// ── HELPERS ──
+const $=id=>document.getElementById(id);
+function showScr(id){['screen-config','screen-game','screen-feedback','screen-summary'].forEach(s=>$(s).classList.toggle('active',s===id));}
+function selMode(n,el){document.querySelectorAll('.mode-option').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function taskLetter(j){return String.fromCharCode(65+j);}
+
+// ── PERMUTATIONS ──
+function perms(arr){
+  if(arr.length<=1)return[arr.slice()];
+  const r=[];
+  arr.forEach((v,i)=>{const rest=[...arr.slice(0,i),...arr.slice(i+1)];perms(rest).forEach(p=>r.push([v,...p]));});
+  return r;
+}
+function scoreP(P,perm){return perm.reduce((s,tj,wi)=>s+P[wi][tj],0);}
+function findOpt(P){
+  const ps=perms([...Array(P.length).keys()]);
+  let best=-1e9,bp=null,worst=1e9,wp=null;
+  ps.forEach(p=>{const s=scoreP(P,p);if(s>best){best=s;bp=p;}if(s<worst){worst=s;wp=p;}});
+  return{best,bestPerm:bp,worst,worstPerm:wp};
+}
+
+// ── DATA GEN ──
+function genP(n,noise){
+  const P=[];
+  for(let i=0;i<n;i++){
+    let row,tries=0;
+    do{row=[];for(let j=0;j<n;j++)row.push(Math.round(clamp(Math.random()*8+1,1,10)));tries++;}
+    while(tries<20&&P.some(r=>r.every((v,j)=>Math.abs(v-row[j])<1)));
+    P.push(row);
+  }
+  return P;
+}
+function genS(P,ns,noise){
+  return P.map(row=>row.map(p=>Array.from({length:ns},()=>Math.round(clamp(p+randn()*noise,1,15)))));
+}
+function buildSeq(ns,n){
+  const seq=[];
+  for(let k=0;k<ns;k++){for(let wi=0;wi<n;wi++)seq.push({t:'single',wi,si:k});seq.push({t:'review'});}
+  return seq;
+}
+
+// ── START ──
+function startGame(){
+  const n=parseInt(document.querySelector('.mode-option.active').dataset.n);
+  cfg={n,rounds:+$('cfg-rounds').value,obsDur:+$('cfg-obs').value*1000,reviewDur:+$('cfg-review').value*1000,decisionDur:+$('cfg-decision').value,ns:+$('cfg-samples').value,noise:+$('cfg-noise').value};
+  G.round=0;G.totalScore=0;G.history=[];
+  startRound();
+}
+function startRound(){
+  if(G.round>=cfg.rounds){showSummary();return;}
+  G.round++;
+  G.assignment={};G.phase='observe';
+  G.P=genP(cfg.n,cfg.noise);G.S=genS(G.P,cfg.ns,cfg.noise);
+  const opt=findOpt(G.P);G.best=opt.best;G.bestPerm=opt.bestPerm;G.worst=opt.worst;G.worstPerm=opt.worstPerm;
+  G.obsSeq=buildSeq(cfg.ns,cfg.n);G.obsStep=0;
+  showScr('screen-game');updateTopbar();
+  renderRight(false);
+  runObs();
+}
+function updateTopbar(){
+  $('tb-round').textContent=`Round ${G.round}/${cfg.rounds}`;
+  $('tb-score').textContent=`Score: ${G.totalScore.toFixed(1)}`;
+}
+function setPhase(ph){
+  G.phase=ph;
+  const pill=$('tb-phase');
+  const map={observe:['Observation','tp-obs'],review:['Review','tp-review'],assign:['Assignment','tp-assign'],countdown:['⏱ Decision','tp-countdown'],locked:['🔒 Locked','tp-locked']};
+  const[lbl,cls]=map[ph]||['','tp-obs'];
+  pill.className=`tp tp-phase ${cls}`;pill.textContent=lbl;
+}
+
+// ── OBSERVATION LOOP ──
+function runObs(){
+  if(G.obsTimer)clearTimeout(G.obsTimer);
+  if(G.obsStep>=G.obsSeq.length){endObs();return;}
+  const s=G.obsSeq[G.obsStep];
+  if(s.t==='review'){setPhase('review');renderLeft_review();G.obsTimer=setTimeout(()=>{G.obsStep++;runObs();},cfg.reviewDur);}
+  else{setPhase('observe');renderLeft_obs(s.wi,s.si);G.obsTimer=setTimeout(()=>{G.obsStep++;runObs();},cfg.obsDur);}
+}
+function endObs(){
+  setPhase('assign');
+  renderLeft_finalReview();renderRight(true);
+  G.obsTimer=setTimeout(()=>startCountdown(),cfg.reviewDur);
+}
+
+// ── LEFT PANEL RENDERS ──
+function workerRow(i){
+  return`<div class="worker-cell"><div class="worker-avatar" style="background:${WBG[i]};color:${WCL[i]}">${WIC[i]}</div><span class="worker-name" style="color:${WCL[i]}">Worker ${i+1}</span></div>`;
+}
+function thRow(n){return Array.from({length:n},(_,j)=>`<th>Task ${taskLetter(j)}</th>`).join('');}
+
+function renderLeft_obs(activeWi,si){
+  const n=cfg.n;
+  const dayLabel=`Day ${si+1}`;
+  const rows=Array.from({length:n},(_,i)=>`<tr><td>${workerRow(i)}</td>${Array.from({length:n},(_,j)=>{
+    if(i===activeWi){const v=G.S[i][j][si];return`<td><span class="obs-val">${v}</span></td>`;}
+    return`<td><span class="obs-blank"></span></td>`;
+  }).join('')}</tr>`).join('');
+  $('lp').innerHTML=`<div class="panel-heading">Observation: <span class="ph-sub">${dayLabel}</span></div><table class="obs-table"><thead><tr><th></th>${thRow(n)}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderLeft_review(){
+  const n=cfg.n;
+  const seen=G.obsSeq.slice(0,G.obsStep).filter(s=>s.t==='single');
+  const cells=Array.from({length:n},()=>Array.from({length:n},()=>[]));
+  seen.forEach(s=>G.S[s.wi].forEach((col,j)=>cells[s.wi][j].push(col[s.si])));
+  const reviewNum=G.obsSeq.slice(0,G.obsStep+1).filter(s=>s.t==='review').length+1;
+  const rows=Array.from({length:n},(_,i)=>`<tr><td>${workerRow(i)}</td>${Array.from({length:n},(_,j)=>{
+    const arr=cells[i][j];
+    if(!arr.length)return`<td><span class="obs-blank"></span></td>`;
+    const m=(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1);
+    return`<td><span class="obs-val">${m}</span></td>`;
+  }).join('')}</tr>`).join('');
+  const sec=Math.ceil(cfg.reviewDur/1000);
+  $('lp').innerHTML=`<div class="panel-heading">Review: <span class="ph-sub">Day ${reviewNum}</span></div><table class="obs-table"><thead><tr><th></th>${thRow(n)}</tr></thead><tbody>${rows}</tbody></table><div class="timer-section"><div class="timer-bar-track"><div class="timer-bar-fill" id="rev-bar" style="width:100%"></div></div><div class="timer-lbl" id="rev-lbl">${sec} seconds</div></div>`;
+  let el=0,iv=200;
+  const ti=setInterval(()=>{el+=iv;const p=Math.max(0,1-el/cfg.reviewDur);const b=$('rev-bar'),l=$('rev-lbl');if(b)b.style.width=(p*100)+'%';if(l)l.textContent=`${Math.ceil((cfg.reviewDur-el)/1000)} seconds`;if(el>=cfg.reviewDur)clearInterval(ti);},iv);
+}
+
+function renderLeft_finalReview(){
+  const n=cfg.n;
+  const rows=Array.from({length:n},(_,i)=>`<tr><td>${workerRow(i)}</td>${Array.from({length:n},(_,j)=>{const m=(G.S[i][j].reduce((a,b)=>a+b,0)/G.S[i][j].length).toFixed(1);return`<td><span class="obs-val">${m}</span></td>`;}).join('')}</tr>`).join('');
+  $('lp').innerHTML=`<div class="panel-heading">Final Review <span class="ph-sub">— all data</span></div><table class="obs-table"><thead><tr><th></th>${thRow(n)}</tr></thead><tbody>${rows}</tbody></table><div style="margin-top:16px;padding:12px 16px;background:#eff6ff;border-radius:8px;font-size:13px;color:#1d4ed8;font-weight:500">📝 Assignment phase — choose your assignments on the right.</div>`;
+}
+
+function renderLeft_hidden(){
+  const n=cfg.n;
+  const rows=Array.from({length:n},(_,i)=>`<tr><td>${workerRow(i)}</td>${Array.from({length:n},()=>`<td><span class="obs-blank"></span></td>`).join('')}</tr>`).join('');
+  $('lp').innerHTML=`<div class="panel-heading">⏱ Decision Time</div><table class="obs-table"><thead><tr><th></th>${thRow(n)}</tr></thead><tbody>${rows}</tbody></table><div style="margin-top:16px;padding:12px 16px;background:#fff7ed;border-radius:8px;font-size:13px;color:#c2410c;font-weight:500">⚠️ Data hidden — use your memory to complete the assignment!</div>`;
+}
+
+// ── RIGHT PANEL ──
+function renderRight(canInteract){
+  const n=cfg.n;
+  const at=Object.values(G.assignment).map(Number);
+  const rows=Array.from({length:n},(_,i)=>{
+    const ai=G.assignment[i];
+    return`<tr><td>${workerRow(i)}</td>${Array.from({length:n},(_,j)=>{
+      const on=ai===j;
+      const rowTaken=ai!==undefined&&!on;
+      const colTaken=at.includes(j)&&!on;
+      let cls='chk';
+      if(on)cls+=' chk-on';
+      if(!canInteract)cls+=' chk-locked';
+      else if(rowTaken||colTaken)cls+=' chk-dis';
+      const oc=canInteract&&!(rowTaken||colTaken)?`onclick="toggleAssign(${i},${j})"`:canInteract&&on?`onclick="toggleAssign(${i},${j})"`:'' ;
+      // Allow unchecking own selection even if row/col taken
+      const clickable=canInteract&&(on||(!rowTaken&&!colTaken));
+      return`<td><span class="${cls}"${clickable?` onclick="toggleAssign(${i},${j})"`:''} role="checkbox" aria-checked="${on}"></span></td>`;
+    }).join('')}</tr>`;
+  }).join('');
+
+  const allAssigned=Object.keys(G.assignment).length===n;
+  const locked=G.phase==='locked';
+  const inActive=G.phase==='assign'||G.phase==='countdown';
+  const canSubmit=inActive&&allAssigned;
+
+  const note=locked?'Assignment locked.'
+    :inActive?(allAssigned?'All workers assigned — ready to submit!':'Assign each worker to exactly one task.')
+    :'Can only submit when observation and review rounds are complete';
+
+  const cdBlock=G.phase==='countdown'?`<div style="margin-bottom:16px"><div class="cd-bar-track"><div class="cd-bar-fill${G.cdLeft<=5?' urgent':''}" id="cd-bar" style="width:${(G.cdLeft/G.cdTotal)*100}%"></div></div><div class="timer-lbl" id="cd-lbl">${G.cdLeft} seconds remaining</div></div>`:'';
+  const lockBanner=locked?`<div class="locked-banner">🔒 Assignment locked for this round</div>`:'';
+
+  $('rp').innerHTML=`<div class="panel-heading">Assignment</div>${lockBanner}<div class="assign-wrap"><table class="assign-table"><thead><tr><th></th>${thRow(n)}</tr></thead><tbody>${rows}</tbody></table></div><div class="submit-section">${cdBlock}<div class="submit-note">${note}</div><button class="btn-submit"${canSubmit?'':' disabled'} onclick="submitAssignment()">Submit</button></div>`;
+}
+
+function toggleAssign(wi,tj){
+  if(G.phase!=='assign'&&G.phase!=='countdown')return;
+  if(G.phase==='locked')return;
+  const cur=G.assignment[wi];
+  if(cur===tj){delete G.assignment[wi];}
+  else{
+    // Remove existing holder of task tj
+    Object.keys(G.assignment).forEach(k=>{if(G.assignment[k]===tj)delete G.assignment[k];});
+    G.assignment[wi]=tj;
+  }
+  renderRight(true);
+}
+
+// ── COUNTDOWN ──
+function startCountdown(){
+  if(G.obsTimer)clearTimeout(G.obsTimer);
+  setPhase('countdown');
+  G.cdLeft=cfg.decisionDur;G.cdTotal=cfg.decisionDur;
+  renderLeft_hidden();renderRight(true);
+  G.cdTimer=setInterval(()=>{
+    G.cdLeft--;
+    const bar=$('cd-bar'),lbl=$('cd-lbl');
+    if(bar){bar.style.width=((G.cdLeft/G.cdTotal)*100)+'%';if(G.cdLeft<=5)bar.classList.add('urgent');}
+    if(lbl)lbl.textContent=`${G.cdLeft} seconds remaining`;
+    if(G.cdLeft<=0){clearInterval(G.cdTimer);autoFill();lockScore();}
+  },1000);
+}
+
+function autoFill(){
+  const n=cfg.n;
+  const aw=Object.keys(G.assignment).map(Number);
+  const at=Object.values(G.assignment).map(Number);
+  const fw=[...Array(n).keys()].filter(i=>!aw.includes(i));
+  const ft=[...Array(n).keys()].filter(j=>!at.includes(j));
+  fw.forEach((wi,idx)=>{if(idx<ft.length)G.assignment[wi]=ft[idx];});
+}
+
+function submitAssignment(){
+  if(G.phase==='locked')return;
+  if(G.cdTimer)clearInterval(G.cdTimer);
+  if(G.obsTimer)clearTimeout(G.obsTimer);
+  autoFill();
+  lockScore();
+}
+
+function lockScore(){
+  setPhase('locked');
+  const n=cfg.n;
+  let score=0;
+  for(let i=0;i<n;i++){const j=G.assignment[i];if(j!==undefined)score+=G.P[i][j];}
+  const eff=G.best===G.worst?1:(score-G.worst)/(G.best-G.worst);
+  G.totalScore+=score;
+  G.history.push({round:G.round,score,eff,best:G.best,worst:G.worst,assignment:{...G.assignment},bestPerm:[...G.bestPerm],P:G.P.map(r=>[...r])});
+  updateTopbar();
+  renderRight(false);
+  setTimeout(()=>showFeedback(),700);
+}
+
+// ── FEEDBACK ──
+function showFeedback(){
+  const r=G.history[G.history.length-1],n=cfg.n,isLast=G.round>=cfg.rounds;
+  const eff=(r.eff*100).toFixed(1);
+  const ec=r.eff>=.8?'#22c55e':r.eff>=.5?'#f97316':'#ef4444';
+
+  const bk=Array.from({length:n},(_,i)=>{
+    const j=r.assignment[i];if(j===undefined)return'';
+    const v=r.P[i][j],isOpt=r.bestPerm[i]===j;
+    return`<div class="fb-row${isOpt?' optimal':''}"><div class="worker-cell" style="flex:1"><div class="worker-avatar" style="background:${WBG[i]};color:${WCL[i]};width:34px;height:34px;font-size:16px">${WIC[i]}</div><span class="fb-wn" style="color:${WCL[i]}">Worker ${i+1}</span></div><span class="fb-ar">→</span><span class="fb-tn">Task ${taskLetter(j)}</span><span class="fb-v">${v.toFixed(1)}</span>${isOpt?`<span class="opt-tag">✓ optimal</span>`:''}</div>`;
+  }).join('');
+
+  const el=$('screen-feedback');
+  el.innerHTML=`<div class="fb-card aup"><div class="fb-tag">Round ${r.round} of ${cfg.rounds}</div><div class="fb-title">Round Complete</div><div class="fb-big">${r.score.toFixed(1)}</div><div class="fb-eff">Efficiency: <strong style="color:${ec}">${eff}%</strong></div><div class="fb-cmp"><div class="fb-cbox cbox-best"><div class="cbl">Optimal</div><div class="cbv">${r.best.toFixed(1)}</div></div><div class="fb-cbox cbox-worst"><div class="cbl">Worst</div><div class="cbv">${r.worst.toFixed(1)}</div></div></div><div class="fb-bk">${bk}</div><div class="fb-acts">${isLast?`<button class="btn-ghost" onclick="showSummary()">See Summary</button>`:''}<button class="btn-next" onclick="${isLast?'showSummary()':'startRound()'}">${isLast?'View Summary →':'Next Round →'}</button></div></div>`;
+  showScr('screen-feedback');
+}
+
+// ── SUMMARY ──
+function showSummary(){
+  const rs=G.history,total=G.totalScore,avg=total/rs.length;
+  const best=rs.reduce((a,b)=>b.score>a.score?b:a);
+  const worst=rs.reduce((a,b)=>b.score<a.score?b:a);
+  const avgEff=(rs.reduce((s,r)=>s+r.eff,0)/rs.length*100).toFixed(1);
+
+  const hist=rs.map(r=>{
+    const p=Math.max(2,(r.score/r.best)*100);
+    const c=r.eff>=.8?'#22c55e':r.eff>=.5?'#4f6ef7':'#ef4444';
+    return`<div class="hist-row"><div class="hn">${r.round}</div><div class="hbw"><div class="hb" style="width:${p}%;background:${c}"></div></div><div class="hs" style="color:${c}">${r.score.toFixed(1)}</div><div class="he">${(r.eff*100).toFixed(0)}%</div></div>`;
+  }).join('');
+
+  const el=$('screen-summary');
+  el.innerHTML=`<div class="sum-hero aup"><div class="sum-tag">Session Complete</div><div class="sum-title">Your Results</div><div class="sum-total">${total.toFixed(1)}</div><div class="sum-avg">Average per round: <strong>${avg.toFixed(1)}</strong></div></div><div class="sum-stats aup"><div class="stat-c"><div class="sl">Best Round</div><div class="sv sc-g">${best.score.toFixed(1)}</div></div><div class="stat-c"><div class="sl">Avg Efficiency</div><div class="sv sc-b">${avgEff}%</div></div><div class="stat-c"><div class="sl">Worst Round</div><div class="sv sc-r">${worst.score.toFixed(1)}</div></div></div><div class="hist-card aup"><div class="hist-title">Round History</div>${hist}</div><div class="sum-acts aup"><button class="btn-ghost" onclick="exportData()">⬇ Export JSON</button><button class="btn-next" onclick="restartGame()">↺ New Session</button></div>`;
+  showScr('screen-summary');
+}
+
+function exportData(){
+  const d={config:cfg,totalScore:G.totalScore,rounds:G.history.map(r=>({round:r.round,score:r.score,efficiency:r.eff,optimal:r.best,worst:r.worst,assignment:Object.fromEntries(Object.entries(r.assignment).map(([k,v])=>[`W${+k+1}`,`T${taskLetter(v)}`])),optimalAssignment:r.bestPerm.map((tj,wi)=>({worker:`W${wi+1}`,task:`T${taskLetter(tj)}`}))}))};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.download=`assignment-game-${Date.now()}.json`;a.click();
+}
+
+function restartGame(){
+  if(G.obsTimer)clearTimeout(G.obsTimer);
+  if(G.cdTimer)clearInterval(G.cdTimer);
+  showScr('screen-config');
+}
+</script>
+</body>
+</html>
