@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Game</title>
+    <style>
+        :root {
+            --w1-color: #00BFA5; 
+            --w2-color: #FF6D00; 
+            --w3-color: #E91E63; 
+            --w4-color: #2196F3; 
+            --bg-color: #ffffff;
+            --text-main: #333333;
+            --border-light: #f0f0f0;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: #f9fafb;
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: var(--bg-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 1000px;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        /* Screens */
+        #setup-screen, #summary-screen { display: none; text-align: center; }
+        #game-screen { display: none; flex-direction: row; gap: 40px; }
+        .active-screen { display: flex !important; }
+
+        h1, h2 { text-align: center; margin-bottom: 20px; }
+
+        /* Setup & Summary Styles */
+        .btn {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn:hover { background-color: #e0e0e0; }
+        .btn-primary { background-color: #00BFA5; color: white; border: none; }
+        .btn-primary:hover { background-color: #00a08a; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Game Layout */
+        .panel { flex: 1; }
+        .divider { width: 1px; background-color: var(--border-light); }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th { font-weight: 600; padding: 15px 10px; font-size: 14px; }
+        td { padding: 15px 10px; border-bottom: 1px solid var(--border-light); font-size: 18px; font-weight: bold; }
+        tr:last-child td { border-bottom: none; }
+
+        /* Worker Labels */
+        .worker-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            justify-content: flex-start;
+        }
+        .icon-circle {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 16px;
+        }
+
+        /* Masked Data Pill */
+        .masked-pill {
+            display: inline-block;
+            width: 50px; height: 16px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+        }
+
+        /* Checkboxes */
+        .custom-checkbox {
+            appearance: none;
+            width: 24px; height: 24px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            outline: none;
+            transition: 0.2s;
+        }
+        .custom-checkbox:checked {
+            border-color: #00BFA5;
+            background-color: #00BFA5;
+        }
+        .custom-checkbox:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 16px;
+            left: 4px; top: -1px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            visibility: hidden; /* Hidden during observation/review */
+        }
+        .progress-track {
+            width: 80%; height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 100%;
+            background-color: #8BC34A;
+            transition: width 0.1s linear;
+        }
+        .timer-text { font-size: 14px; color: #666; font-weight: bold; }
+
+        /* Submit Area */
+        .submit-area {
+            margin-top: 30px;
+            text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+        }
+        .validation-text { font-size: 13px; color: #888; max-width: 250px; }
+
+        /* End Round Modal */
+        #round-feedback {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 10;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 12px; width: 400px; text-align: center;
+        }
+        .score-display { font-size: 24px; font-weight: bold; margin: 20px 0; color: #00BFA5; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="setup-screen" class="active-screen" style="flex-direction: column;">
+            <h1>Assignment Game</h1>
+            <p>Observe the workers' daily performance, then map each worker to a unique task to maximize overall productivity.</p>
+            <div style="margin-top: 20px; display: flex; gap: 20px; justify-content: center;">
+                <button class="btn btn-primary" onclick="startGame(3)">Start 3x3 Mode</button>
+                <button class="btn btn-primary" style="background-color: #2196F3;" onclick="startGame(4)">Start 4x4 Mode</button>
+            </div>
+        </div>
+
+        <div id="game-screen">
+            <div class="panel">
+                <h2 id="observation-title">Observation: Day 1</h2>
+                <table id="observation-table">
+                    </table>
+                <div class="progress-container" id="timer-container">
+                    <div class="progress-track"><div class="progress-fill" id="progress-bar"></div></div>
+                    <div class="timer-text" id="timer-text">10 seconds</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="panel">
+                <h2>Assignment</h2>
+                <table id="assignment-table">
+                    </table>
+                <div class="submit-area">
+                    <div class="validation-text" id="validation-msg">Can only submit when observation and review rounds are complete</div>
+                    <button class="btn" id="submit-btn" disabled onclick="submitRound()">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="summary-screen" style="flex-direction: column;">
+            <h1>Session Complete</h1>
+            <h2>Total Score: <span id="final-score">0</span></h2>
+            <p id="efficiency-score"></p>
+            <button class="btn btn-primary" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <div id="round-feedback">
+        <div class="modal-content">
+            <h2>Round Complete</h2>
+            <div class="score-display">Your Score: <span id="round-score"></span></div>
+            <p>Optimal Score: <span id="optimal-score"></span></p>
+            <button class="btn btn-primary" onclick="nextRound()">Continue</button>
+        </div>
+    </div>
+
+<script>
+    /* --- CONFIGURATION --- */
+    const CONFIG = {
+        rounds: 3,
+        days: 5,
+        timePerObsMs: 1500,     // Time each individual worker is shown
+        timePerReviewMs: 2000,  // Time each full day is shown in review
+        submissionTimeMs: 10000 // Countdown timer for final submission
+    };
+
+    const WORKERS = [
+        { id: 1, icon: '🐶', color: '#00BFA5' }, 
+        { id: 2, icon: '🐱', color: '#FF6D00' }, 
+        { id: 3, icon: '🐭', color: '#E91E63' }, 
+        { id: 4, icon: '🐻', color: '#2196F3' }  
+    ];
+
+    const TASKS = ['Task A', 'Task B', 'Task C', 'Task D'];
+
+    /* --- STATE --- */
+    let state = {
+        gridSize: 3,
+        currentRound: 1,
+        phase: 'setup', // setup, observation, review, submission
+        trueMatrix: [],
+        dailyData: [],  // Stores the 5 matrices for the 5 days
+        assignments: {}, 
+        totalScore: 0,
+        totalOptimal: 0,
+        timerInterval: null,
+        currentDay: 0,
+        currentWorker: 0
+    };
+
+    /* --- GAME LOGIC --- */
+    function startGame(size) {
+        state.gridSize = size;
+        document.getElementById('setup-screen').classList.remove('active-screen');
+        document.getElementById('game-screen').classList.add('active-screen');
+        startRound();
+    }
+
+    function startRound() {
+        state.assignments = {};
+        state.currentDay = 0;
+        state.currentWorker = 0;
+        state.phase = 'observation';
+        
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('validation-msg').innerText = "Can only submit when observation and review rounds are complete.";
+        document.getElementById('timer-container').style.visibility = 'hidden';
+
+        // Generate True Productivity Matrix P
+        state.trueMatrix = [];
+        for (let i = 0; i < state.gridSize; i++) {
+            let row = [];
+            for (let j = 0; j < state.gridSize; j++) {
+                row.push(Math.floor(Math.random() * 8) + 2); // Base values 2 to 9
+            }
+            state.trueMatrix.push(row);
+        }
+
+        // Generate 5 Days of Noisy Observations
+        state.dailyData = [];
+        for(let d = 0; d < CONFIG.days; d++) {
+            state.dailyData.push(generateNoisyMatrix(state.trueMatrix));
+        }
+
+        buildTables();
+        runSequence();
+    }
+
+    function generateNoisyMatrix(baseMatrix) {
+        return baseMatrix.map(row => row.map(val => {
+            let noise = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+            return Math.max(1, Math.min(10, val + noise)); // Clamp 1-10
+        }));
+    }
+
+    function runSequence() {
+        if (state.phase === 'observation') {
+            document.getElementById('observation-title').innerText = `Observation: Day ${state.currentDay + 1}`;
+            renderTableData(state.currentDay, state.currentWorker);
+
+            // Advance counters
+            state.currentWorker++;
+            if (state.currentWorker >= state.gridSize) {
+                state.currentWorker = 0;
+                state.currentDay++;
+            }
+
+            if (state.currentDay >= CONFIG.days) {
+                state.phase = 'review';
+                state.currentDay = 0; // Reset for review loop
+            }
+
+            setTimeout(runSequence, CONFIG.timePerObsMs);
+
+        } else if (state.phase === 'review') {
+            document.getElementById('observation-title').innerText = `Review: Day ${state.currentDay + 1}`;
+            renderTableData(state.currentDay, null); // null = show all workers
+
+            state.currentDay++;
+            if (state.currentDay >= CONFIG.days) {
+                state.phase = 'submission';
+            }
+
+            setTimeout(runSequence, CONFIG.timePerReviewMs);
+
+        } else if (state.phase === 'submission') {
+            document.getElementById('observation-title').innerText = "Final Assignment";
+            renderTableData(-1, -1); // Mask all data
+
+            document.getElementById('validation-msg').innerText = "Make final adjustments. Auto-submits when timer ends if valid.";
+            document.getElementById('timer-container').style.visibility = 'visible';
+            
+            checkSubmitStatus();
+
+            startTimer(CONFIG.submissionTimeMs, () => {
+                if (Object.keys(state.assignments).length === state.gridSize) {
+                    submitRound();
+                } else {
+                    alert("Time expired! Incomplete assignment. Moving to next round.");
+                    nextRound();
+                }
+            });
+        }
+    }
+
+    /* --- DOM UPDATES --- */
+    function buildTables() {
+        const obsTable = document.getElementById('observation-table');
+        const assTable = document.getElementById('assignment-table');
+        
+        let headerHtml = '<tr><th></th>';
+        for(let j=0; j<state.gridSize; j++) headerHtml += `<th>${TASKS[j]}</th>`;
+        headerHtml += '</tr>';
+        
+        obsTable.innerHTML = headerHtml;
+        assTable.innerHTML = headerHtml;
+
+        for(let i=0; i<state.gridSize; i++) {
+            let w = WORKERS[i];
+            let labelHtml = `
+                <td style="width: 120px;">
+                    <div class="worker-label" style="color: ${w.color}">
+                        <div class="icon-circle" style="background-color: ${w.color}">${w.icon}</div>
+                        Worker ${w.id}
+                    </div>
+                </td>`;
+            
+            let obsRow = document.createElement('tr');
+            obsRow.innerHTML = labelHtml;
+            for(let j=0; j<state.gridSize; j++) {
+                let td = document.createElement('td');
+                td.id = `obs-${i}-${j}`;
+                obsRow.appendChild(td);
+            }
+            obsTable.appendChild(obsRow);
+
+            let assRow = document.createElement('tr');
+            assRow.innerHTML = labelHtml;
+            for(let j=0; j<state.gridSize; j++) {
+                let td = document.createElement('td');
+                let cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'custom-checkbox';
+                cb.id = `ass-${i}-${j}`;
+                cb.onclick = () => handleCheck(i, j);
+                td.appendChild(cb);
+                assRow.appendChild(td);
+            }
+            assTable.appendChild(assRow);
+        }
+    }
+
+    // dayIndex: which matrix to pull from. workerIndex: specific row to show (null = all, -1 = none)
+    function renderTableData(dayIndex, workerIndex) {
+        let matrix = dayIndex >= 0 ? state.dailyData[dayIndex] : null;
+
+        for(let i=0; i<state.gridSize; i++) {
+            for(let j=0; j<state.gridSize; j++) {
+                let cell = document.getElementById(`obs-${i}-${j}`);
+                if (matrix && (workerIndex === null || workerIndex === i)) {
+                    cell.innerText = matrix[i][j];
+                    cell.style.color = 'var(--text-main)';
+                } else {
+                    cell.innerHTML = '<span class="masked-pill"></span>';
+                }
+            }
+        }
+    }
+
+    /* --- TIMER LOGIC --- */
+    function startTimer(duration, callback) {
+        clearInterval(state.timerInterval);
+        let startTime = Date.now();
+        let bar = document.getElementById('progress-bar');
+        let text = document.getElementById('timer-text');
+
+        state.timerInterval = setInterval(() => {
+            let elapsed = Date.now() - startTime;
+            let remaining = duration - elapsed;
+            
+            if (remaining <= 0) {
+                clearInterval(state.timerInterval);
+                bar.style.width = "0%";
+                text.innerText = "0 seconds";
+                callback();
+            } else {
+                let pct = (remaining / duration) * 100;
+                bar.style.width = pct + "%";
+                text.innerText = Math.ceil(remaining / 1000) + " seconds";
+            }
+        }, 50);
+    }
+
+    /* --- INTERACTION LOGIC --- */
+    function handleCheck(workerIdx, taskIdx) {
+        let cb = document.getElementById(`ass-${workerIdx}-${taskIdx}`);
+        let isChecking = cb.checked;
+
+        if (isChecking) {
+            // Uncheck row (worker's other tasks)
+            for(let j=0; j<state.gridSize; j++) {
+                if (j !== taskIdx) document.getElementById(`ass-${workerIdx}-${j}`).checked = false;
+            }
+            // Uncheck col (task's other workers)
+            for(let i=0; i<state.gridSize; i++) {
+                if (i !== workerIdx) document.getElementById(`ass-${i}-${taskIdx}`).checked = false;
+            }
+            state.assignments[workerIdx] = taskIdx;
+        } else {
+            delete state.assignments[workerIdx];
+        }
+
+        for(let i=0; i<state.gridSize; i++) {
+            for(let j=0; j<state.gridSize; j++) {
+                if (!document.getElementById(`ass-${i}-${j}`).checked) {
+                    if (state.assignments[i] === j) delete state.assignments[i];
+                }
+            }
+        }
+        checkSubmitStatus();
+    }
+
+    function checkSubmitStatus() {
+        let btn = document.getElementById('submit-btn');
+        let isValid = Object.keys(state.assignments).length === state.gridSize;
+        let isSubmissionPhase = state.phase === 'submission';
+        
+        if (isValid && isSubmissionPhase) {
+            btn.disabled = false;
+            btn.classList.add('btn-primary');
+        } else {
+            btn.disabled = true;
+            btn.classList.remove('btn-primary');
+        }
+    }
+
+    /* --- SCORING & END ROUND --- */
+    function submitRound() {
+        clearInterval(state.timerInterval);
+        
+        let userScore = 0;
+        for (const [wStr, t] of Object.entries(state.assignments)) {
+            let w = parseInt(wStr);
+            userScore += state.trueMatrix[w][t];
+        }
+
+        let optimalScore = getOptimalScore(state.trueMatrix);
+        
+        state.totalScore += userScore;
+        state.totalOptimal += optimalScore;
+
+        document.getElementById('round-score').innerText = userScore;
+        document.getElementById('optimal-score').innerText = optimalScore;
+        document.getElementById('round-feedback').style.display = 'flex';
+    }
+
+    function nextRound() {
+        document.getElementById('round-feedback').style.display = 'none';
+        if (state.currentRound < CONFIG.rounds) {
+            state.currentRound++;
+            startRound();
+        } else {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        document.getElementById('game-screen').classList.remove('active-screen');
+        document.getElementById('summary-screen').classList.add('active-screen');
+        
+        document.getElementById('final-score').innerText = state.totalScore;
+        let efficiency = ((state.totalScore / state.totalOptimal) * 100).toFixed(1);
+        document.getElementById('efficiency-score').innerText = `Efficiency: ${efficiency}% of Optimal`;
+    }
+
+    /* --- MATH UTILS --- */
+    function getOptimalScore(matrix) {
+        let size = matrix.length;
+        let cols = Array.from({length: size}, (_, i) => i);
+        let maxScore = -Infinity;
+
+        function permute(arr, memo = []) {
+            if (arr.length === 0) {
+                let score = 0;
+                for(let i=0; i<size; i++) {
+                    score += matrix[i][memo[i]];
+                }
+                if (score > maxScore) maxScore = score;
+            } else {
+                for (let i = 0; i < arr.length; i++) {
+                    let curr = arr.slice();
+                    let next = curr.splice(i, 1);
+                    permute(curr, memo.concat(next));
+                }
+            }
+        }
+        permute(cols);
+        return maxScore;
+    }
+</script>
+
+</body>
+</html>
