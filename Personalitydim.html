@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personality Spectrum Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0e;
+    --surface: #16161f;
+    --surface2: #1e1e2a;
+    --border: rgba(255,255,255,0.12);
+    --accent: #d4af37;
+    --accent2: #7eb8c8;
+    --accent3: #c87ea0;
+    --text: #f0ece6;
+    --text-muted: rgba(232,228,220,0.7);
+    --cat1: #d4af37;
+    --cat2: #7eb8c8;
+    --cat3: #c87ea0;
+    --cat4: #8ec87e;
+    --cat5: #c8887e;
+    --cat6: #a07ec8;
+    --cat7: #7ec8b8;
+    --cat8: #c8c07e;
+    --cat9: #c87eb8;
+    --cat10: #7e98c8;
+    --cat11: #c8a07e;
+    --cat12: #7ec888;
+    --cat13: #c8b07e;
+    --cat14: #9e7ec8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ---- HEADER ---- */
+  .header {
+    padding: 3rem 4rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+  .header-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.65rem 1.4rem;
+    border: 1px solid;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0e;
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #e6c45c; border-color: #e6c45c; }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-muted);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- LAYOUT ---- */
+  .app-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    min-height: calc(100vh - 160px);
+  }
+
+  /* ---- INPUT PANEL ---- */
+  .input-panel {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: calc(100vh - 160px);
+    position: sticky;
+    top: 0;
+  }
+  .input-panel::-webkit-scrollbar { width: 4px; }
+  .input-panel::-webkit-scrollbar-track { background: var(--bg); }
+  .input-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .category-block {
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .category-header {
+    padding: 0.9rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .category-header:hover { background: rgba(255,255,255,0.05); }
+  .cat-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cat-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    flex: 1;
+  }
+  .cat-toggle {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+  .cat-toggle.open { transform: rotate(90deg); }
+  .category-items { display: none; padding: 0 1rem 0.75rem; }
+  .category-items.open { display: block; }
+
+  .trait-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.25rem;
+  }
+  .trait-left {
+    font-size: 0.63rem;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.3;
+  }
+  .trait-right {
+    font-size: 0.63rem;
+    color: var(--text-muted);
+    text-align: left;
+    line-height: 1.3;
+  }
+  .trait-left.active, .trait-right.active { color: var(--text); font-weight: 500; }
+
+  .slider-wrap {
+    position: relative;
+    width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 80px;
+    height: 3px;
+    background: var(--border);
+    outline: none;
+    border-radius: 1px;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    transition: transform 0.15s;
+    box-shadow: 0 0 0 3px rgba(212,175,55,0.3);
+    border: 2px solid var(--bg);
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+  /* ---- POSTER PANEL ---- */
+  .poster-panel {
+    padding: 2rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 160px);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .poster-panel::-webkit-scrollbar { width: 4px; }
+  .poster-panel::-webkit-scrollbar-track { background: var(--bg); }
+  .poster-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .poster-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .poster-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(212,175,55,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(126,184,200,0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .poster-title-area {
+    margin-bottom: 2.5rem;
+    text-align: center;
+    position: relative;
+  }
+  .poster-main-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+  .poster-subtitle {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+  .poster-divider {
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 0.75rem auto;
+  }
+
+  /* Category sections in poster */
+  .poster-category {
+    margin-bottom: 2rem;
+  }
+  .poster-cat-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .poster-cat-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Bar rows */
+  .bar-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 10px 130px;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .bar-label-left {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+  .bar-label-right {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+  .bar-label-left.dominant { color: var(--text); font-weight: 500; }
+  .bar-label-right.dominant { color: var(--text); font-weight: 500; }
+
+  .bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+  .bar-fill {
+    position: absolute;
+    top: 0; bottom: 0;
+    border-radius: 3px;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .bar-fill.left {
+    right: 50%;
+    transform-origin: right;
+  }
+  .bar-fill.right {
+    left: 50%;
+    transform-origin: left;
+  }
+  .bar-center {
+    width: 10px; height: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bar-dot {
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  /* Radar chart */
+  .radar-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  canvas { display: block; }
+
+  /* Stats summary */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.75rem;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 0.3rem;
+  }
+
+  /* Bubble chart */
+  .bubble-chart {
+    width: 100%;
+    height: 320px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--surface2);
+    margin-top: 0.5rem;
+  }
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.5rem;
+    color: rgba(0,0,0,0.8);
+    font-weight: 500;
+    cursor: default;
+    transition: transform 0.3s;
+    padding: 4px;
+    overflow: hidden;
+    line-height: 1.2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .bubble:hover { transform: scale(1.15); z-index: 10; }
+
+  .view-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    color: var(--text-muted);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(212,175,55,0.1);
+  }
+  .tab:hover:not(.active) { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+  .view-section { display: none; }
+  .view-section.active { display: block; }
+
+  /* Octant / spider summary */
+  .spider-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .spider-tag {
+    font-size: 0.6rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255,255,255,0.03);
+  }
+  .spider-tag-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+  @media (max-width: 900px) {
+    .app-grid { grid-template-columns: 1fr; }
+    .input-panel { max-height: none; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+    .poster-panel { max-height: none; }
+    .header { padding: 2rem 1.5rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Personality Spectrum Map</div>
+  <div class="header-sub">105 trait dimensions · graphical self-portrait</div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="randomize()">⚡ Randomize</button>
+    <button class="btn btn-ghost" onclick="resetAll()">↺ Reset</button>
+  </div>
+</div>
+
+<div class="app-grid">
+  <!-- INPUT PANEL -->
+  <div class="input-panel" id="inputPanel"></div>
+
+  <!-- POSTER PANEL -->
+  <div class="poster-panel">
+    <div class="view-tabs">
+      <button class="tab active" data-view="bars" onclick="switchView('bars', this)">Bar Map</button>
+      <button class="tab" data-view="radar" onclick="switchView('radar', this)">Radar</button>
+      <button class="tab" data-view="bubbles" onclick="switchView('bubbles', this)">Bubble Cloud</button>
+      <button class="tab" data-view="summary" onclick="switchView('summary', this)">Summary</button>
+    </div>
+
+    <!-- BARS VIEW -->
+    <div class="view-section active" id="view-bars">
+      <div class="poster-container" id="posterBars">
+        <div class="poster-title-area">
+          <div class="poster-main-title">MY PERSONALITY SPECTRUM</div>
+          <div class="poster-divider"></div>
+          <div class="poster-subtitle">a portrait in 105 dimensions</div>
+        </div>
+        <div id="barCategories"></div>
+      </div>
+    </div>
+
+    <!-- RADAR VIEW -->
+    <div class="view-section" id="view-radar">
+      <div class="poster-container">
+        <div class="poster-title-area">
+          <div class="poster-main-title">CATEGORY RADAR</div>
+          <div class="poster-divider"></div>
+          <div class="poster-subtitle">average lean per dimension category</div>
+        </div>
+        <div class="radar-wrap">
+          <canvas id="radarCanvas" width="500" height="500"></canvas>
+        </div>
+        <div class="spider-labels" id="spiderLabels"></div>
+      </div>
+    </div>
+
+    <!-- BUBBLE VIEW -->
+    <div class="view-section" id="view-bubbles">
+      <div class="poster-container">
+        <div class="poster-title-area">
+          <div class="poster-main-title">TRAIT BUBBLE CLOUD</div>
+          <div class="poster-divider"></div>
+          <div class="poster-subtitle">size = intensity · color = category</div>
+        </div>
+        <div class="bubble-chart" id="bubbleChart"></div>
+      </div>
+    </div>
+
+    <!-- SUMMARY VIEW -->
+    <div class="view-section" id="view-summary">
+      <div class="poster-container">
+        <div class="poster-title-area">
+          <div class="poster-main-title">PROFILE SUMMARY</div>
+          <div class="poster-divider"></div>
+          <div class="poster-subtitle">key insights from your configuration</div>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div id="topTraits" style="margin-top:1.5rem;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  {
+    id:'cat1', label:'Time & Energy', color:'var(--cat1)',
+    traits:[
+      ['Morning Person','Night Owl'],
+      ['Planner','Spontaneous'],
+      ['Time-Oriented','Task-Oriented'],
+      ['Early Adopter','Late Adopter'],
+      ['Proactive','Reactive'],
+      ['Long-Term Planner','Short-Term Planner'],
+    ]
+  },
+  {
+    id:'cat2', label:'Novelty vs Familiarity', color:'var(--cat2)',
+    traits:[
+      ['Familiarity Lover','Novelty Seeker'],
+      ['Tradition-Oriented','Innovation-Oriented'],
+      ['Open','Closed'],
+      ['Explorer','Settler'],
+      ['Generalist','Specialist'],
+    ]
+  },
+  {
+    id:'cat3', label:'Social Interaction', color:'var(--cat3)',
+    traits:[
+      ['Introvert','Extrovert'],
+      ['Competitive','Collaborative'],
+      ['Direct Communicator','Diplomatic Communicator'],
+      ['Conflict-Engaging','Conflict-Avoiding'],
+      ['Leader','Follower'],
+      ['Group-Identified','Independent'],
+      ['Assertive','Passive'],
+      ['Independent','Interdependent'],
+      ['High Self-Monitor','Low Self-Monitor'],
+      ['Affiliative','Autonomous'],
+      ['Nurturing','Self-Reliant'],
+      ['High-Context Comms','Low-Context Comms'],
+    ]
+  },
+  {
+    id:'cat4', label:'Decision-Making', color:'var(--cat4)',
+    traits:[
+      ['Analytical','Intuitive'],
+      ['Deliberate','Impulsive'],
+      ['Logical','Emotional'],
+      ['Methodical','Intuitive Solver'],
+      ['Convergent','Divergent'],
+      ['Process-Focused','Outcome-Focused'],
+      ['Satisficer','Maximizer'],
+      ['Concrete Thinker','Abstract Thinker'],
+      ['Systematic','Heuristic'],
+      ['Risk-Benefit Calc','Intuitive Risk'],
+    ]
+  },
+  {
+    id:'cat5', label:'Risk & Change', color:'var(--cat5)',
+    traits:[
+      ['Risk-Averse','Risk-Taker'],
+      ['Stability-Seeker','Change-Embracer'],
+      ['Adaptable','Fixed Mindset'],
+      ['Cautious','Bold'],
+      ['Contingency Planner','Improviser'],
+    ]
+  },
+  {
+    id:'cat6', label:'Learning & Processing', color:'var(--cat6)',
+    traits:[
+      ['Detail-Oriented','Big-Picture'],
+      ['Structured Learner','Exploratory Learner'],
+      ['Text-Based','Visual Learner'],
+      ['Verbal Processor','Mental Processor'],
+      ['Active Learner','Passive Learner'],
+      ['Sequential','Global Learner'],
+      ['Auditory','Kinesthetic'],
+      ['Reflective','Impulsive Learner'],
+    ]
+  },
+  {
+    id:'cat7', label:'Values & Motivation', color:'var(--cat7)',
+    traits:[
+      ['Practical','Idealistic'],
+      ['Self-Starter','Externally Motivated'],
+      ['Internal Validator','External Validator'],
+      ['Optimist','Pessimist'],
+      ['Future-Focused','Present-Focused'],
+      ['Intrinsic Motivation','Extrinsic Motivation'],
+      ['Growth-Oriented','Fixed Mindset'],
+      ['Altruistic','Self-Interested'],
+      ['Hedonistic','Ascetic'],
+      ['Power-Seeking','Harmony-Seeking'],
+      ['Security-Oriented','Achievement-Oriented'],
+      ['Egalitarian','Hierarchical'],
+    ]
+  },
+  {
+    id:'cat8', label:'Material & Environment', color:'var(--cat8)',
+    traits:[
+      ['Minimalist','Collector'],
+      ['Saver','Spender'],
+      ['Structured Env','Flexible Env'],
+      ['Privacy-Seeking','Transparent'],
+      ['Urban','Rural'],
+      ['Technophile','Technophobe'],
+      ['Nature-Oriented','Human-Made Env'],
+    ]
+  },
+  {
+    id:'cat9', label:'Work & Task', color:'var(--cat9)',
+    traits:[
+      ['Multi-tasker','Single-Focus'],
+      ['Rule-Follower','Rule-Questioner'],
+      ['Perfectionist','Good Enough'],
+      ['Deadline-Driven','Process-Driven'],
+      ['Initiator','Responder'],
+      ['Competitive Achiever','Collaborative Achiever'],
+    ]
+  },
+  {
+    id:'cat10', label:'Big Five / HEXACO', color:'var(--cat10)',
+    traits:[
+      ['Conscientious','Careless'],
+      ['Agreeable','Disagreeable'],
+      ['Neurotic','Emotionally Stable'],
+      ['Honest-Humble','Deceptive'],
+      ['High Openness','Low Openness'],
+      ['Emotionally Reactive','Emotionally Resilient'],
+    ]
+  },
+  {
+    id:'cat11', label:'Dark Triad', color:'var(--cat11)',
+    traits:[
+      ['Machiavellian','Integrity'],
+      ['Psychopathic','Empathetic'],
+      ['Narcissistic','Humble'],
+      ['Sadistic','Compassionate'],
+    ]
+  },
+  {
+    id:'cat12', label:'Cognitive Styles', color:'var(--cat12)',
+    traits:[
+      ['Sensing','Intuition'],
+      ['Thinking','Feeling'],
+      ['Judging','Perceiving'],
+      ['Field Dependent','Field Independent'],
+      ['Leveler','Sharpener'],
+    ]
+  },
+  {
+    id:'cat13', label:'Thinking Styles', color:'var(--cat13)',
+    traits:[
+      ['Dichotomous','Nuanced Thinker'],
+      ['Linear','Lateral Thinker'],
+      ['Critical Thinker','Accepting Thinker'],
+      ['Bottom-Up','Top-Down'],
+      ['Objectivist','Relativist'],
+      ['Life History: Fast','Life History: Slow'],
+      ['r-selected','K-selected'],
+    ]
+  },
+  {
+    id:'cat14', label:'Temperament & Coping', color:'var(--cat14)',
+    traits:[
+      ['Type A','Type B'],
+      ['Inhibited','Uninhibited'],
+      ['Superordinate','Subordinate'],
+      ['Melancholic','Sanguine'],
+      ['Choleric','Phlegmatic'],
+      ['Dominant','Submissive'],
+      ['Problem-Focused Coping','Emotion-Focused Coping'],
+      ['Avoidant Coping','Approach Coping'],
+      ['Adaptive Coping','Maladaptive Coping'],
+      ['Secure Attachment','Insecure Attachment'],
+      ['Anxious-Preoccupied','Dismissive-Avoidant'],
+      ['Fearful-Avoidant','Secure Base'],
+    ]
+  },
+];
+
+// State: value 0-100, 50=center
+const state = {};
+CATEGORIES.forEach(cat => {
+  cat.traits.forEach((_, i) => {
+    state[`${cat.id}_${i}`] = 50;
+  });
+});
+
+// Build input panel
+function buildInputPanel() {
+  const panel = document.getElementById('inputPanel');
+  panel.innerHTML = '';
+  CATEGORIES.forEach((cat, ci) => {
+    const block = document.createElement('div');
+    block.className = 'category-block';
+    const header = document.createElement('div');
+    header.className = 'category-header';
+    header.innerHTML = `
+      <span class="cat-dot" style="background:${cat.color}"></span>
+      <span class="cat-label" style="color:${cat.color}">${cat.label}</span>
+      <span class="cat-toggle" id="toggle-${cat.id}">▶</span>
+    `;
+    header.onclick = () => toggleCat(cat.id);
+    const items = document.createElement('div');
+    items.className = 'category-items' + (ci === 0 ? ' open' : '');
+    items.id = `items-${cat.id}`;
+    cat.traits.forEach((trait, ti) => {
+      const key = `${cat.id}_${ti}`;
+      const row = document.createElement('div');
+      row.className = 'trait-row';
+      row.innerHTML = `
+        <span class="trait-left" id="lbl-left-${key}">${trait[0]}</span>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="100" value="50" id="slider-${key}"
+            oninput="updateTrait('${key}', this.value)">
+        </div>
+        <span class="trait-right" id="lbl-right-${key}">${trait[1]}</span>
+      `;
+      items.appendChild(row);
+    });
+    block.appendChild(header);
+    block.appendChild(items);
+    panel.appendChild(block);
+  });
+  // fix toggle arrow after DOM insert
+  CATEGORIES.forEach((cat, ci) => {
+    const t = document.getElementById(`toggle-${cat.id}`);
+    if (t && ci === 0) t.classList.add('open');
+  });
+}
+
+function toggleCat(id) {
+  const items = document.getElementById(`items-${id}`);
+  const toggle = document.getElementById(`toggle-${id}`);
+  const open = items.classList.toggle('open');
+  toggle.classList.toggle('open', open);
+}
+
+function updateTrait(key, val) {
+  state[key] = parseInt(val);
+  updateLabels(key, val);
+  refreshPoster();
+}
+
+function updateLabels(key, val) {
+  const v = parseInt(val);
+  const ll = document.getElementById(`lbl-left-${key}`);
+  const lr = document.getElementById(`lbl-right-${key}`);
+  if (!ll) return;
+  ll.classList.toggle('active', v < 50);
+  lr.classList.toggle('active', v > 50);
+}
+
+function randomize() {
+  Object.keys(state).forEach(k => {
+    const v = Math.floor(Math.random() * 101);
+    state[k] = v;
+    const sl = document.getElementById(`slider-${k}`);
+    if (sl) sl.value = v;
+    updateLabels(k, v);
+  });
+  refreshPoster();
+}
+
+function resetAll() {
+  Object.keys(state).forEach(k => {
+    state[k] = 50;
+    const sl = document.getElementById(`slider-${k}`);
+    if (sl) sl.value = 50;
+    updateLabels(k, 50);
+  });
+  refreshPoster();
+}
+
+// Build bar poster
+function buildBarPoster() {
+  const container = document.getElementById('barCategories');
+  container.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const catDiv = document.createElement('div');
+    catDiv.className = 'poster-category';
+    catDiv.innerHTML = `<div class="poster-cat-title" style="color:${cat.color}">${cat.label}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'bar-grid';
+    cat.traits.forEach((trait, ti) => {
+      const key = `${cat.id}_${ti}`;
+      const val = state[key]; // 0=left, 100=right, 50=center
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      const leftPct = val < 50 ? (50 - val) : 0;
+      const rightPct = val > 50 ? (val - 50) : 0;
+      const leftDom = val < 45;
+      const rightDom = val > 55;
+      row.innerHTML = `
+        <div class="bar-label-left ${leftDom?'dominant':''}">${trait[0]}</div>
+        <div class="bar-track">
+          <div class="bar-fill left" style="width:${leftPct}%;background:${cat.color};opacity:1"></div>
+          <div class="bar-fill right" style="width:${rightPct}%;background:${cat.color};opacity:1"></div>
+        </div>
+        <div class="bar-center"><div class="bar-dot"></div></div>
+        <div class="bar-label-right ${rightDom?'dominant':''}">${trait[1]}</div>
+      `;
+      grid.appendChild(row);
+    });
+    catDiv.appendChild(grid);
+    container.appendChild(catDiv);
+  });
+}
+
+// Radar chart
+function drawRadar() {
+  const canvas = document.getElementById('radarCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W, H) * 0.38;
+  const N = CATEGORIES.length;
+  const angles = CATEGORIES.map((_, i) => (i / N) * Math.PI * 2 - Math.PI/2);
+
+  // Compute average "lean" per category (0-100 → -1 to 1)
+  const values = CATEGORIES.map(cat => {
+    const vals = cat.traits.map((_, ti) => state[`${cat.id}_${ti}`]);
+    const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+    return (avg - 50) / 50; // -1 to 1
+  });
+
+  // Draw grid rings
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach(r => {
+    ctx.beginPath();
+    angles.forEach((a, i) => {
+      const x = cx + Math.cos(a) * R * r;
+      const y = cy + Math.sin(a) * R * r;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.stroke();
+  });
+
+  // Draw spokes
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  angles.forEach(a => {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+    ctx.stroke();
+  });
+
+  // Draw polygon
+  ctx.beginPath();
+  values.forEach((v, i) => {
+    const r = (Math.abs(v) * 0.5 + 0.1) * R;
+    const a = angles[i];
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(212,175,55,0.25)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(212,175,55,0.9)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dots at each axis
+  values.forEach((v, i) => {
+    const r = (Math.abs(v) * 0.5 + 0.1) * R;
+    const a = angles[i];
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(212,175,55,1)';
+    ctx.fill();
+    ctx.strokeStyle = '#0a0a0e';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  // Category labels
+  ctx.font = '500 10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  CATEGORIES.forEach((cat, i) => {
+    const a = angles[i];
+    const x = cx + Math.cos(a) * (R + 32);
+    const y = cy + Math.sin(a) * (R + 32);
+    // Abbreviate
+    const short = cat.label.length > 14 ? cat.label.slice(0, 13) + '…' : cat.label;
+    ctx.fillStyle = cat.color;
+    ctx.fillText(short, x, y);
+  });
+
+  // Spider labels
+  const spiderDiv = document.getElementById('spiderLabels');
+  spiderDiv.innerHTML = '';
+  CATEGORIES.forEach((cat, i) => {
+    const v = values[i];
+    const tag = document.createElement('div');
+    tag.className = 'spider-tag';
+    tag.style.borderColor = cat.color;
+    tag.style.color = cat.color;
+    tag.innerHTML = `<span class="spider-tag-dot" style="background:${cat.color}"></span><span style="font-size:0.55rem;opacity:0.9">${cat.label}</span>`;
+    spiderDiv.appendChild(tag);
+  });
+}
+
+// Bubble chart
+function buildBubbleChart() {
+  const chart = document.getElementById('bubbleChart');
+  chart.innerHTML = '';
+  const W = chart.clientWidth || 600;
+  const H = 320;
+
+  const allBubbles = [];
+  CATEGORIES.forEach(cat => {
+    cat.traits.forEach((trait, ti) => {
+      const key = `${cat.id}_${ti}`;
+      const v = state[key];
+      const dev = Math.abs(v - 50);
+      if (dev < 5) return; // skip center
+      const label = v < 50 ? trait[0] : trait[1];
+      allBubbles.push({ label, dev, color: cat.color, cat: cat.id });
+    });
+  });
+
+  // Sort by dev desc, take top 60
+  allBubbles.sort((a,b) => b.dev - a.dev);
+  const top = allBubbles.slice(0, 60);
+
+  // Simple force-ish placement
+  const placed = [];
+  top.forEach((b, idx) => {
+    const r = 14 + b.dev * 0.6;
+    let x, y, tries = 0;
+    do {
+      x = r + Math.random() * (W - r * 2);
+      y = r + Math.random() * (H - r * 2);
+      tries++;
+    } while (tries < 80 && placed.some(p => Math.hypot(p.x - x, p.y - y) < p.r + r + 2));
+    placed.push({ x, y, r });
+
+    const el = document.createElement('div');
+    el.className = 'bubble';
+    el.style.width = r * 2 + 'px';
+    el.style.height = r * 2 + 'px';
+    el.style.left = (x - r) + 'px';
+    el.style.top = (y - r) + 'px';
+    el.style.background = b.color;
+    el.style.opacity = 0.7 + b.dev / 200;
+    el.style.fontSize = Math.max(7, Math.min(11, r * 0.5)) + 'px';
+    el.title = b.label;
+    if (r > 18) el.textContent = b.label.length > 12 ? b.label.slice(0,11)+'…' : b.label;
+    chart.appendChild(el);
+  });
+}
+
+// Summary
+function buildSummary() {
+  // Compute interesting stats
+  const allVals = Object.values(state);
+  const avg = allVals.reduce((a,b)=>a+b,0) / allVals.length;
+  const extremes = allVals.filter(v => v < 20 || v > 80).length;
+  const balanced = allVals.filter(v => v >= 40 && v <= 60).length;
+  const leftCount = allVals.filter(v => v < 50).length;
+  const rightCount = allVals.filter(v => v > 50).length;
+
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML = '';
+  const stats = [
+    { value: extremes, label: 'Strong Traits', color: 'var(--accent)' },
+    { value: balanced, label: 'Balanced Traits', color: 'var(--accent2)' },
+    { value: leftCount, label: 'Left-Leaning', color: 'var(--accent3)' },
+    { value: rightCount, label: 'Right-Leaning', color: 'var(--cat4)' },
+    { value: Math.round(avg), label: 'Global Average', color: 'var(--cat6)' },
+    { value: allVals.length, label: 'Total Dimensions', color: 'var(--cat7)' },
+  ];
+  stats.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.innerHTML = `
+      <div class="stat-value" style="color:${s.color}">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    `;
+    statsGrid.appendChild(card);
+  });
+
+  // Top traits
+  const topDiv = document.getElementById('topTraits');
+  const ranked = [];
+  CATEGORIES.forEach(cat => {
+    cat.traits.forEach((trait, ti) => {
+      const key = `${cat.id}_${ti}`;
+      const v = state[key];
+      const dev = Math.abs(v - 50);
+      if (dev >= 30) {
+        ranked.push({ label: v < 50 ? trait[0] : trait[1], dev, color: cat.color, cat: cat.label });
+      }
+    });
+  });
+  ranked.sort((a,b) => b.dev - a.dev);
+  if (ranked.length > 0) {
+    topDiv.innerHTML = `
+      <div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem">Strong Defining Traits</div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem">
+        ${ranked.slice(0,20).map(r => `
+          <span style="font-size:0.6rem;padding:0.2rem 0.6rem;border:1px solid ${r.color};color:${r.color};border-radius:2px;opacity:${0.8 + r.dev/100};background:rgba(255,255,255,0.03)">
+            ${r.label}
+          </span>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    topDiv.innerHTML = '<div style="font-size:0.65rem;color:var(--text-muted);text-align:center;padding:1rem">Move the sliders to reveal your strongest traits</div>';
+  }
+}
+
+let activeView = 'bars';
+function switchView(view, el) {
+  activeView = view;
+  document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+  
+  // If triggered by button click, use the clicked element, otherwise find by data attribute
+  const tabEl = el || document.querySelector(`.tab[data-view="${view}"]`);
+  if (tabEl) tabEl.classList.add('active');
+  
+  refreshPoster();
+}
+
+function refreshPoster() {
+  if (activeView === 'bars') buildBarPoster();
+  else if (activeView === 'radar') drawRadar();
+  else if (activeView === 'bubbles') buildBubbleChart();
+  else if (activeView === 'summary') buildSummary();
+}
+
+// Init
+function init() {
+  buildInputPanel();
+  buildBarPoster();
+  drawRadar();
+  buildBubbleChart();
+  buildSummary();
+}
+
+init();
+</script>
+</body>
+</html>
