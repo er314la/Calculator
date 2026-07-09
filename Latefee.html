@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Late Fee Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .payment-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+            width: 100%;
+            font-size: 1.1em;
+            margin-top: 15px;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        #results {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            display: none;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .total-highlight {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #c0392b;
+            border-top: 1px solid #bdc3c7;
+            padding-top: 5px;
+            margin-top: 5px;
+        }
+        .info-text {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Late Fee Calculator</h2>
+    
+    <div class="form-group">
+        <label for="monthlyRent">Monthly Rent Due (1st of the month):</label>
+        <input type="number" id="monthlyRent" value="" min="0" step="0.01">
+    </div>
+
+    <div class="form-group">
+        <label>Payments (Past & Future dates allowed):</label>
+        <div id="paymentsContainer">
+            </div>
+        <button type="button" onclick="addPaymentRow()">+ Add Payment</button>
+    </div>
+
+    <button type="button" class="btn-success" onclick="calculateLateFee()">Calculate Balance & Late Fees</button>
+
+    <div id="results">
+        <h3>Calculation Summary</h3>
+        <p class="info-text" id="calculationDateText"></p>
+        <div class="result-item">
+            <span>Remaining Unpaid Rent Balance:</span>
+            <span id="resBaseRent">$0.00</span>
+        </div>
+        
+        <div class="result-item total-highlight">
+            <span>Late Fee:</span>
+            <span id="resFinalFee">$0.00</span>
+        </div>
+        <div class="result-item total-highlight" style="color: #2c3e50;">
+            <span>Total Outstanding Amount Due:</span>
+            <span id="resTotalDue">$0.00</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addPaymentRow() {
+        const container = document.getElementById('paymentsContainer');
+        const row = document.createElement('div');
+        row.className = 'payment-row';
+        
+        row.innerHTML = `
+            <input type="date" class="pay-date" required>
+            <input type="number" class="pay-amount" placeholder="Amount $" min="0" step="0.01" required>
+            <button type="button" class="btn-danger" onclick="this.parentElement.remove()">X</button>
+        `;
+        container.appendChild(row);
+        
+        // Default new payment date row to current date
+        row.querySelector('.pay-date').value = new Date().toISOString().split('T')[0];
+    }
+
+    function calculateLateFee() {
+        const rent = parseFloat(document.getElementById('monthlyRent').value) || 0;
+        
+        const today = new Date();
+        let cutoffDay = today.getDate(); // Base timeline default stops at today
+        
+        // Map out user input payments by day of the month
+        const paymentsByDay = Array(32).fill(0);
+        const dateRows = document.querySelectorAll('.payment-row');
+        
+        dateRows.forEach(row => {
+            const dVal = row.querySelector('.pay-date').value;
+            const aVal = parseFloat(row.querySelector('.pay-amount').value) || 0;
+            if (dVal) {
+                const pDate = new Date(dVal + 'T00:00:00');
+                const pDay = pDate.getDate();
+                paymentsByDay[pDay] += aVal;
+                
+                // If a payment is scheduled further out than today, extend the simulation cutoff to that day
+                if (pDay > cutoffDay) {
+                    cutoffDay = pDay;
+                }
+            }
+        });
+
+        let currentBalance = rent;
+        let totalLateFee = 0;
+
+        // Loop daily through the month up to the final relevant milestone date
+        for (let k = 1; k <= cutoffDay; k++) {
+            currentBalance -= paymentsByDay[k];
+            if (currentBalance < 0) currentBalance = 0;
+
+            // Late rule applies starting from day 4 onwards
+            if (k >= 4 && currentBalance > 0) {
+                const dailyRate = 0.002 + 0.0002 * (k - 4);
+                totalLateFee += currentBalance * dailyRate;
+            }
+        }
+
+        // Custom Rounding rule (Over $2 over a multiple of 5 rounds up, <= $2 rounds down)
+        let roundedLateFee = 0;
+        if (totalLateFee > 0) {
+            const lowerMultiple = Math.floor(totalLateFee / 5) * 5;
+            const remainder = totalLateFee - lowerMultiple;
+
+            if (remainder > 2.00) {
+                roundedLateFee = lowerMultiple + 5; 
+            } else {
+                roundedLateFee = lowerMultiple;     
+            }
+        }
+
+        const overallTotalDue = currentBalance + roundedLateFee;
+
+        // Output results back to screen
+        document.getElementById('calculationDateText').innerText = `Timeline projected through day ${cutoffDay} of the month.`;
+        document.getElementById('resBaseRent').innerText = `$${currentBalance.toFixed(2)}`;
+        //document.getElementById('resRawFee').innerText = `$${totalLateFee.toFixed(2)}`;
+        document.getElementById('resFinalFee').innerText = `$${roundedLateFee.toFixed(2)}`;
+        document.getElementById('resTotalDue').innerText = `$${overallTotalDue.toFixed(2)}`;
+        document.getElementById('results').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
