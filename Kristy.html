@@ -104,9 +104,9 @@
 
   <div class="footnote">
     <strong>Footnote — entered rule:</strong>
-    Carb-containing meal; approximately 10 minutes before eating; decision time before 3:00 PM;
+    Carb-containing meal; approximately 10 minutes before eating; decision time between 7:00 AM and 4:00 PM;
     more than 4 hours since the last Kirsty injection today, or no injection yet today;
-    if Lingo glucose is above 134 mg/dL → 1 unit; otherwise → no injection.
+    if Lingo glucose is between 100 and 200 mg/dL (and above 134 mg/dL) → 1 unit; otherwise → no injection.
     This app only applies the entered rule and does not independently determine a medically appropriate insulin dose.
   </div>
 </div>
@@ -168,8 +168,9 @@
 
     var z = minutesFromMidnight(mealTime.value);
 
-    if (z >= 15 * 60) {
-      render("stop", "NO INJECTION", "Decision time is 3:00 PM or later.");
+    // Decision time check: Must be between 7:00 AM (420 mins) and 4:00 PM (960 mins)
+    if (z < 7 * 60 || z >= 16 * 60) {
+      render("stop", "NO INJECTION", "Decision time must be between 7:00 AM and 4:00 PM.");
       return;
     }
 
@@ -186,6 +187,12 @@
         render("stop", "NO INJECTION", "Four hours or less since the last injection.");
         return;
       }
+    }
+
+    // Lingo reading check: Must be between 100 and 200 mg/dL
+    if (y < 100 || y > 200) {
+      render("stop", "NO INJECTION", "Lingo reading must be between 100 and 200 mg/dL.");
+      return;
     }
 
     if (y > 134) {
