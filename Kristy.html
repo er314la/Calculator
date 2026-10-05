@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kirsty Injection Helper</title>
+<style>
+  :root{
+    --text:#1f2937;--muted:#6b7280;--border:#d1d5db;
+    --green-bg:#dcfce7;--green:#166534;--green-border:#22c55e;
+    --red-bg:#fee2e2;--red:#991b1b;--red-border:#ef4444;
+    --amber-bg:#fef3c7;--amber:#92400e;--amber-border:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:24px 16px 40px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    color:var(--text);background:#f6f7fb;
+  }
+  .wrap{max-width:680px;margin:0 auto}
+  .card{
+    background:#fff;border:1px solid var(--border);border-radius:18px;
+    padding:20px;margin-bottom:16px;
+  }
+  .field{margin-bottom:18px}
+  label{display:block;font-weight:750;margin-bottom:7px}
+  input[type="time"],input[type="number"]{
+    width:100%;min-height:48px;font-size:18px;padding:10px 12px;
+    border:1px solid var(--border);border-radius:12px;background:#fff;
+  }
+  .checkrow{display:flex;align-items:flex-start;gap:10px}
+  .checkrow input{width:22px;height:22px;margin-top:1px}
+  .checkrow label{margin:0}
+  .buttons{display:flex;gap:10px;flex-wrap:wrap}
+  button{
+    min-height:46px;border:0;border-radius:12px;padding:11px 17px;
+    font-size:17px;font-weight:800;cursor:pointer;
+  }
+  .primary{background:#111827;color:#fff}
+  .secondary{background:#e5e7eb;color:#111827}
+  .result{
+    margin-top:20px;padding:24px 16px;border-radius:16px;border:3px solid var(--border);
+    background:#f3f4f6;text-align:center;min-height:155px;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+  }
+  .result.good{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+  .result.stop{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+  .result.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)}
+  .result-label{
+    font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase
+  }
+  .dose{font-size:54px;line-height:1;font-weight:950;margin:10px 0}
+  .detail{font-size:16px;font-weight:650}
+  .js-warning{
+    background:var(--amber-bg);color:var(--amber);border:2px solid var(--amber-border);
+    border-radius:14px;padding:14px 16px;margin-bottom:16px;font-weight:700;line-height:1.4
+  }
+  .footnote{
+    color:var(--muted);font-size:14px;line-height:1.45;padding:2px 4px
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="jsWarning" class="js-warning">
+    JavaScript is required to evaluate rules. Please enable JavaScript to use this application.
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <div class="checkrow">
+        <input id="carbMeal" type="checkbox" checked>
+        <label for="carbMeal">Carb-containing meal is ready and expected to be eaten</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="mealTime">Meal / decision time (now)</label>
+      <input id="mealTime" type="time">
+    </div>
+
+    <div class="field">
+      <label for="lastInjection">Last Kirsty injection today if any </label>
+      <input id="lastInjection" type="time">
+    </div>
+
+    <div class="field">
+      <label for="lingo">Lingo glucose reading in mg/dL</label>
+      <input id="lingo" type="number" min="40" max="500" step="1" inputmode="numeric" placeholder="">
+    </div>
+
+    <div class="buttons">
+      <button id="checkBtn" class="primary" type="button">Check rule</button>
+      <button id="nowBtn" class="secondary" type="button">Use current time</button>
+      <button id="resetBtn" class="secondary" type="button">Reset</button>
+    </div>
+
+    <div id="result" class="result" aria-live="polite">
+      <div class="result-label">Result</div>
+      <div class="dose">—</div>
+      <div class="detail">Enter the information above.</div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>Footnote — entered rule:</strong>
+    Carb-containing meal; approximately 10 minutes before eating; decision time before 3:00 PM;
+    more than 4 hours since the last Kirsty injection today, or no injection yet today;
+    if Lingo glucose is above 134 mg/dL → 1 unit; otherwise → no injection.
+    This app only applies the entered rule and does not independently determine a medically appropriate insulin dose.
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var warning = document.getElementById("jsWarning");
+  if (warning) {
+    warning.style.display = "none";
+  }
+
+  var carbMeal = document.getElementById("carbMeal");
+  var mealTime = document.getElementById("mealTime");
+  var lastInjection = document.getElementById("lastInjection");
+  var lingo = document.getElementById("lingo");
+  var result = document.getElementById("result");
+  var checkBtn = document.getElementById("checkBtn");
+  var nowBtn = document.getElementById("nowBtn");
+  var resetBtn = document.getElementById("resetBtn");
+
+  function minutesFromMidnight(value) {
+    if (!value) return null;
+    var parts = value.split(":");
+    return Number(parts[0]) * 60 + Number(parts[1]);
+  }
+
+  function render(kind, main, detail) {
+    result.className = "result " + kind;
+    result.innerHTML =
+      '<div class="result-label">Result</div>' +
+      '<div class="dose">' + main + '</div>' +
+      '<div class="detail">' + detail + '</div>';
+  }
+
+  function evaluate() {
+    var yText = lingo.value.trim();
+
+    if (!mealTime.value || yText === "") {
+      result.className = "result";
+      result.innerHTML =
+        '<div class="result-label">Result</div>' +
+        '<div class="dose">—</div>' +
+        '<div class="detail">Enter the meal time and Lingo reading.</div>';
+      return;
+    }
+
+    var y = Number(yText);
+    if (!Number.isFinite(y) || y <= 0) {
+      render("warn", "CHECK INPUT", "Enter a valid Lingo reading.");
+      return;
+    }
+
+    if (!carbMeal.checked) {
+      render("stop", "NO INJECTION", "No carb-containing meal is selected.");
+      return;
+    }
+
+    var z = minutesFromMidnight(mealTime.value);
+
+    if (z >= 15 * 60) {
+      render("stop", "NO INJECTION", "Decision time is 3:00 PM or later.");
+      return;
+    }
+
+    if (lastInjection.value) {
+      var x = minutesFromMidnight(lastInjection.value);
+
+      if (x > z) {
+        render("warn", "CHECK TIMES", "Last injection time is later than the decision time.");
+        return;
+      }
+
+      var elapsed = z - x;
+      if (elapsed <= 4 * 60) {
+        render("stop", "NO INJECTION", "Four hours or less since the last injection.");
+        return;
+      }
+    }
+
+    if (y > 134) {
+      render("good", "1 UNIT", "All entered conditions are satisfied.");
+    } else {
+      render("stop", "NO INJECTION", "Lingo is not above 134 mg/dL.");
+    }
+  }
+
+  function setCurrentTime() {
+    var now = new Date();
+    mealTime.value =
+      String(now.getHours()).padStart(2, "0") + ":" +
+      String(now.getMinutes()).padStart(2, "0");
+    evaluate();
+  }
+
+  function resetAll() {
+    carbMeal.checked = true;
+    mealTime.value = "";
+    lastInjection.value = "";
+    lingo.value = "";
+    result.className = "result";
+    result.innerHTML =
+      '<div class="result-label">Result</div>' +
+      '<div class="dose">—</div>' +
+      '<div class="detail">Enter the information above.</div>';
+  }
+
+  checkBtn.addEventListener("click", evaluate);
+  nowBtn.addEventListener("click", setCurrentTime);
+  resetBtn.addEventListener("click", resetAll);
+
+  carbMeal.addEventListener("change", evaluate);
+  mealTime.addEventListener("change", evaluate);
+  lastInjection.addEventListener("change", evaluate);
+  lingo.addEventListener("input", evaluate);
+})();
+</script>
+</body>
+</html>
